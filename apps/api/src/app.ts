@@ -24,10 +24,12 @@ export const createApp = () => {
   // 1. Helmet security headers
   app.use(helmet());
 
-  // 2. CORS configuration
+  // 2. CORS configuration (dynamically reflects origin so credentials: true is accepted by browsers)
   app.use(
     cors({
-      origin: process.env.CLIENT_URL || true,
+      origin: (_origin, callback) => {
+        callback(null, true);
+      },
       credentials: true,
     })
   );
