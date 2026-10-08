@@ -1,0 +1,31 @@
+{
+  "name": "teamlogger",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@teamlogger/api",
+    "dev:web": "npm run dev --workspace=@teamlogger/web",
+    "dev:agent": "npm run dev --workspace=@teamlogger/agent",
+    "dev:worker": "npm run dev --workspace=@teamlogger/worker",
+    "build": "npm run build --workspace=@teamlogger/shared && npm run build --workspaces --if-present",
+    "build:api": "npm run build --workspace=@teamlogger/shared && npm run build --workspace=@teamlogger/api",
+    "start:api": "node apps/api/dist/index.js",
+    "build:web": "npm run build --workspace=@teamlogger/shared && npm run build --workspace=@teamlogger/web",
+    "build:worker": "npm run build --workspace=@teamlogger/shared && npm run build --workspace=@teamlogger/worker",
+    "start:worker": "node apps/worker/dist/index.js",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.2"
+  }
+}

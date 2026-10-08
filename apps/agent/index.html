@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trackify Agent</title>
+    <style>
+      :root {
+        --bg-window: #ffffff;
+        --bg-subtle: #f8fafc;
+        --bg-hover: #f1f5f9;
+        --border-color: #e2e8f0;
+        --border-dark: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --color-blue: #2563eb;
+        --color-blue-hover: #1d4ed8;
+        --color-green: #22c55e;
+        --color-green-dark: #16a34a;
+        --color-red: #ef4444;
+        --color-red-dark: #dc2626;
+        --color-amber: #f59e0b;
+        --color-orange: #ea580c;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background-color: var(--bg-window);
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.4;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Native scrollbar */
+      ::-webkit-scrollbar { width: 7px; height: 7px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+      /* Buttons & Links */
+      button {
+        font-family: inherit;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      button:active { transform: scale(0.98); }
+
+      .link-btn {
+        background: transparent;
+        color: var(--color-blue);
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 6px;
+        border-radius: 4px;
+      }
+      .link-btn:hover { background: #eff6ff; text-decoration: underline; }
+
+      .pill-btn {
+        background-color: var(--color-blue);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 1px 2px rgba(37,99,235,0.2);
+      }
+      .pill-btn:hover { background-color: var(--color-blue-hover); }
+
+      .icon-btn {
+        background-color: var(--color-blue);
+        color: #ffffff;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+      }
+      .icon-btn:hover { background-color: var(--color-blue-hover); }
+
+      /* Top App Subheader */
+      .app-header {
+        background: #ffffff;
+        border-bottom: 1px solid var(--border-color);
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        overflow: hidden;
+      }
+      .user-pill {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--color-blue);
+        font-weight: 600;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      /* Main container */
+      .app-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 10px 14px;
+        gap: 10px;
+        background: #ffffff;
+      }
+
+      /* Form Select Rows (Project / Task) */
+      .selector-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #ffffff;
+      }
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .row-label {
+        width: 52px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-primary);
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .select-wrapper {
+        flex: 1;
+        position: relative;
+      }
+      .native-select {
+        width: 100%;
+        padding: 5px 24px 5px 8px;
+        font-size: 12px;
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        background: #ffffff;
+        color: var(--text-primary);
+        font-family: inherit;
+        outline: none;
+        cursor: pointer;
+      }
+      .native-select:focus { border-color: var(--color-blue); }
+      .add-btn {
+        color: var(--color-blue);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Start Timer Button */
+      .timer-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .btn-start-large {
+        width: 100%;
+        background-color: var(--color-green);
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 10px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(34,197,94,0.3);
+      }
+      .btn-start-large:hover { background-color: var(--color-green-dark); }
+
+      .active-buttons-group {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+      }
+      .btn-stop-large {
+        flex: 1;
+        background-color: var(--color-red);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 9px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-stop-large:hover { background-color: var(--color-red-dark); }
+
+      .btn-break-large {
+        flex: 1;
+        background-color: var(--color-amber);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 9px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-break-large:hover { background-color: #d97706; }
+
+      .btn-resume-large {
+        flex: 1;
+        background-color: var(--color-green);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 9px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-resume-large:hover { background-color: var(--color-green-dark); }
+
+      /* Live ticker banner */
+      .status-pill-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 10px;
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .status-pill-banner.tracking-active {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+      }
+      .status-pill-banner.tracking-break {
+        background: #fffbeb;
+        border-color: #fde68a;
+      }
+      .status-pill-banner.tracking-idle {
+        background: #fef2f2;
+        border-color: #fecaca;
+      }
+      .status-dot-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        display: inline-block;
+      }
+      .tracking-active .status-dot-pulse {
+        background: #22c55e;
+        box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+        animation: pulseDot 1.8s infinite;
+      }
+      .tracking-break .status-dot-pulse {
+        background: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245,158,11,0.25);
+      }
+      .tracking-idle .status-dot-pulse {
+        background: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
+      }
+      @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+        100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+      }
+      .live-clock-digits {
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      /* Statistics Table */
+      .stats-table-box {
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      .stats-grid-row {
+        display: grid;
+        grid-template-columns: 55px 1fr 1fr 1fr 1fr;
+        text-align: center;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .stats-grid-row:last-child { border-bottom: none; }
+      .stats-header-cell {
+        padding: 5px 2px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #fafafa;
+      }
+      .stats-cell {
+        padding: 6px 2px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .col-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-align: right;
+        padding-right: 8px;
+        background: #fafafa;
+      }
+      .text-green { color: var(--color-green-dark); }
+      .text-red { color: var(--color-red-dark); }
+      .text-orange { color: var(--color-orange); }
+      .text-black { color: #0f172a; }
+
+      /* Sub Nav Bar */
+      .sub-nav-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .sub-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .sub-tab-link {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .sub-tab-link.active { color: var(--color-blue); }
+      .sub-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .mini-select {
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        padding: 2px 4px;
+        font-size: 11px;
+        font-family: inherit;
+        background: #ffffff;
+      }
+
+      /* Recent Tasks Section */
+      .recent-tasks-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-height: 120px;
+      }
+      .recent-tasks-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .search-box-input {
+        width: 100%;
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        padding: 5px 8px 5px 24px;
+        font-size: 11px;
+        outline: none;
+        background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 7px center;
+      }
+      .search-box-input:focus { border-color: var(--color-blue); }
+      .filter-select {
+        width: 100%;
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        padding: 4px 8px;
+        font-size: 11px;
+        background: #ffffff;
+        font-family: inherit;
+        color: var(--text-primary);
+      }
+
+      /* Tasks List */
+      .tasks-scroll-list {
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+        flex: 1;
+        max-height: 140px;
+        overflow-y: auto;
+        background: #fafafa;
+      }
+      .task-item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--border-color);
+        background: #ffffff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .task-item-row:hover { background: #f8fafc; }
+      .task-item-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .task-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .task-action-btn {
+        background: none;
+        color: var(--color-green-dark);
+        font-size: 12px;
+        padding: 2px 4px;
+        border-radius: 2px;
+      }
+      .task-action-btn:hover { background: #dcfce7; }
+      .task-info-btn {
+        background: none;
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+      .task-info-btn:hover { color: var(--color-blue); }
+
+      .footnote-note {
+        font-size: 10px;
+        color: #dc2626;
+        background: #fef2f2;
+        padding: 4px 6px;
+        border-radius: 2px;
+        line-height: 1.3;
+      }
+
+      /* Bottom utility bar */
+      .app-footer {
+        background: #f8fafc;
+        border-top: 1px solid var(--border-color);
+        padding: 5px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+      .footer-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .footer-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-mini {
+        background: #ffffff;
+        border: 1px solid var(--border-dark);
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: var(--text-secondary);
+      }
+      .btn-mini:hover { background: #f1f5f9; color: var(--text-primary); }
+
+      /* Screenshot Notification Toast */
+      .screenshot-toast {
+        position: fixed;
+        top: 38px;
+        right: 12px;
+        background: #0f172a;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 6px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 9999;
+        animation: toastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      @keyframes toastSlideIn {
+        from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .camera-shutter-icon {
+        font-size: 13px;
+        animation: cameraFlash 0.35s ease-out;
+      }
+      @keyframes cameraFlash {
+        0% { transform: scale(0.8); }
+        50% { transform: scale(1.35); }
+        100% { transform: scale(1); }
+      }
+
+      /* Modals (Light Mode) */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .modal-box {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.25);
+        animation: popUp 0.18s ease-out;
+      }
+      @keyframes popUp {
+        from { transform: scale(0.96); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+      }
+
+      /* Login Screen (Light Theme) */
+      .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 24px;
+        background: #f8fafc;
+      }
+      .login-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        padding: 24px;
+        width: 100%;
+        max-width: 340px;
+      }
+      .login-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .app-logo-badge {
+        background: var(--color-blue);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 14px;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .login-input {
+        width: 100%;
+        border: 1px solid var(--border-dark);
+        border-radius: 4px;
+        padding: 7px 10px;
+        font-size: 12px;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        outline: none;
+      }
+      .login-input:focus { border-color: var(--color-blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+      .login-submit-btn {
+        width: 100%;
+        background: var(--color-blue);
+        color: #ffffff;
+        font-weight: 700;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      .login-submit-btn:hover { background: var(--color-blue-hover); }
+
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- ── LOGIN VIEW ── -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="login-section" class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="app-logo-badge">TA</div>
+          <div>
+            <h2 style="font-size: 15px; font-weight: 700; color: #0f172a;">Trackify Agent</h2>
+            <p style="font-size: 11px; color: #64748b;">Sign in to start tracking your time</p>
+          </div>
+        </div>
+
+        <div id="login-error" style="color: #dc2626; font-size: 11px; margin-bottom: 10px; padding: 6px 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px;" class="hidden"></div>
+
+        <form id="login-form">
+          <label style="font-size: 11px; font-weight: 600; color: #475569;">Email Address</label>
+          <input type="email" id="login-email" class="login-input" placeholder="reshuyadav1409@gmail.com" required />
+
+          <label style="font-size: 11px; font-weight: 600; color: #475569;">Password</label>
+          <input type="password" id="login-password" class="login-input" placeholder="••••••••" required />
+
+          <button type="submit" id="login-btn" class="login-submit-btn">Sign In to Tracker</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- ── TRACKER VIEW (EXACT TEAMLOGGER LIGHT DESKTOP APP) ── -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="tracker-section" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+      
+      <!-- Top Subheader Bar -->
+      <header class="app-header">
+        <div class="header-left">
+          <button id="refresh-btn" class="link-btn">
+            <span>🔄</span> Refresh
+          </button>
+          <div class="user-pill">
+            <span>👤</span>
+            <span id="user-email-display">reshuyadav1409@gmail.com</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button id="header-snap-btn" class="pill-btn" title="Capture Screenshot Now">📸 Screenshot</button>
+          <button id="manual-entry-btn" class="pill-btn">✏️ Manual Entry</button>
+          <button id="reports-btn" class="pill-btn">📊 Reports</button>
+          <button id="flush-btn" class="icon-btn" title="Sync now">🔄</button>
+        </div>
+      </header>
+
+      <!-- Screenshot Notification Toast -->
+      <div id="screenshot-toast" class="screenshot-toast hidden">
+        <span class="camera-shutter-icon">📸</span>
+        <span>Screenshot taken at <strong id="screenshot-toast-time">12:00:00</strong></span>
+      </div>
+
+      <!-- App Body Scrollable Area -->
+      <main class="app-body">
+        
+        <!-- Project & Task Form Selectors -->
+        <section class="selector-section">
+          <div class="form-row">
+            <label class="row-label">Project</label>
+            <div class="select-wrapper">
+              <select id="project-select" class="native-select">
+                <option value="default">Default Project</option>
+                <option value="mobile-app">Mobile App</option>
+                <option value="web-portal">Web Portal</option>
+              </select>
+            </div>
+            <button id="new-project-btn" class="link-btn add-btn">⊕ New Project</button>
+          </div>
+
+          <div class="form-row">
+            <label class="row-label">Task</label>
+            <div class="select-wrapper">
+              <select id="task-select" class="native-select">
+                <option value="default">Default Task</option>
+                <option value="frontend-ui">Frontend UI</option>
+                <option value="bug-fixes">Bug Fixes</option>
+              </select>
+            </div>
+            <button id="new-task-btn" class="link-btn add-btn">⊕ New Task</button>
+          </div>
+        </section>
+
+        <!-- Main Timer Start/Stop Buttons -->
+        <section class="timer-actions">
+          <button id="start-btn" class="btn-start-large">
+            ▶&nbsp; Start Timer
+          </button>
+          
+          <div id="active-buttons-group" class="active-buttons-group hidden">
+            <button id="break-btn" class="btn-break-large">
+              ☕&nbsp; Take a Break
+            </button>
+            <button id="resume-btn" class="btn-resume-large hidden">
+              ▶&nbsp; Resume Work
+            </button>
+            <button id="stop-btn" class="btn-stop-large">
+              ⏹&nbsp; Stop Timer
+            </button>
+          </div>
+
+          <!-- Live ticking indicator bar -->
+          <div id="status-pill-banner" class="status-pill-banner">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="status-dot-pulse"></span>
+              <span id="indicator-status-text" style="font-weight: 700; color: #475569;">TRACKING IS OFF</span>
+            </div>
+            <div id="live-clock-digits" class="live-clock-digits">00:00:00</div>
+          </div>
+        </section>
+
+        <!-- Day & Week Statistics Table (Exact TeamLogger UI) -->
+        <section class="stats-table-box">
+          <div class="stats-grid-row">
+            <div class="stats-header-cell col-title"></div>
+            <div class="stats-header-cell text-green">Active</div>
+            <div class="stats-header-cell text-red">Idle</div>
+            <div class="stats-header-cell text-orange">Manual</div>
+            <div class="stats-header-cell text-black">Total</div>
+          </div>
+          <div class="stats-grid-row">
+            <div class="stats-cell col-title">Day</div>
+            <div id="stat-day-active" class="stats-cell text-green">00h 00m</div>
+            <div id="stat-day-idle" class="stats-cell text-red">00h 00m</div>
+            <div class="stats-cell text-orange">00h 00m</div>
+            <div id="stat-day-total" class="stats-cell text-black font-bold">00h 00m</div>
+          </div>
+          <div class="stats-grid-row">
+            <div class="stats-cell col-title">Week</div>
+            <div id="stat-week-active" class="stats-cell text-green">00h 00m</div>
+            <div id="stat-week-idle" class="stats-cell text-red">00h 00m</div>
+            <div class="stats-cell text-orange">00h 00m</div>
+            <div id="stat-week-total" class="stats-cell text-black font-bold">00h 00m</div>
+          </div>
+        </section>
+
+        <!-- Sub Navigation Bar -->
+        <section class="sub-nav-bar">
+          <div class="sub-nav-left">
+            <div class="sub-tab-link active">⭐ Recent Tasks</div>
+            <div class="sub-tab-link" id="account-tab-btn">👤 Account</div>
+          </div>
+          <div class="sub-nav-right">
+            <span>Status</span>
+            <select id="wfo-status-select" class="mini-select">
+              <option value="WFO">WFO</option>
+              <option value="WFH">WFH</option>
+              <option value="Field">Field</option>
+              <option value="Leave">Leave</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Recent Active Tasks -->
+        <section class="recent-tasks-container">
+          <div class="recent-tasks-title">Recent Active Tasks</div>
+          
+          <input type="text" id="task-search-input" class="search-box-input" placeholder="SEARCH RECENT PROJECTS AND TASKS" />
+
+          <select class="filter-select">
+            <option>All Current and Upcoming</option>
+            <option>Recent 7 Days</option>
+            <option>Assigned to Me</option>
+          </select>
+
+          <!-- Interactive scroll list -->
+          <div class="tasks-scroll-list">
+            <div class="task-item-row" onclick="selectQuickTask('Auto', 'Auto')">
+              <div class="task-item-title">Auto ▶</div>
+              <div class="task-item-actions">
+                <button class="task-info-btn" title="Task Info">ℹ️</button>
+                <button class="task-action-btn" title="Start this task">▶</button>
+              </div>
+            </div>
+
+            <div class="task-item-row" onclick="selectQuickTask('Default Project', 'Default Task')">
+              <div class="task-item-title">Default Project ▶</div>
+              <div class="task-item-actions">
+                <button class="task-info-btn" title="Task Info">ℹ️</button>
+                <button class="task-action-btn" title="Start this task">▶</button>
+              </div>
+            </div>
+
+            <div class="task-item-row" onclick="selectQuickTask('Default Project', 'Default Task')">
+              <div class="task-item-title" style="padding-left: 12px; color: #64748b;">↳ Default Task</div>
+              <div class="task-item-actions">
+                <button class="task-info-btn">ℹ️</button>
+                <button class="task-action-btn">▶</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="footnote-note">
+            The list here only shows recent tasks that you have worked on and scheduled. To work on other tasks, search above or click New Task.
+          </p>
+        </section>
+
+      </main>
+
+      <!-- App Footer Utility Bar -->
+      <footer class="app-footer">
+        <div class="footer-left">
+          <span>Queue: <strong id="queue-count">0</strong></span>
+          <button id="help-btn" class="btn-mini">🛡 Permissions</button>
+          <button id="snap-btn" class="btn-mini" title="Capture Screenshot">📸 Snap</button>
+        </div>
+        <div class="footer-right">
+          <button id="reset-daily-btn" class="btn-mini">Reset Day</button>
+          <button id="logout-btn" class="btn-mini">Logout</button>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- ── INACTIVITY WARNING MODAL (5s COUNTDOWN IN LIGHT THEME) ── -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="idle-warning-modal" class="modal-backdrop hidden">
+      <div class="modal-box" style="text-align: center; border: 2px solid #f59e0b;">
+        <div style="font-size: 28px; margin-bottom: 4px;">⚠️</div>
+        <h3 style="font-size: 16px; font-weight: 800; color: #b45309; margin-bottom: 4px;">
+          Inactivity Warning
+        </h3>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+          No mouse or keyboard input detected for 5 seconds.
+        </p>
+
+        <!-- Big countdown -->
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <p style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #d97706; margin-bottom: 4px;">
+            Auto-stopping timer and going idle in:
+          </p>
+          <div id="idle-countdown-sec" style="font-size: 40px; font-weight: 900; color: #b45309; font-family: monospace; line-height: 1;">
+            5s
+          </div>
+          <p style="font-size: 11px; color: #78716c; margin-top: 6px;">
+            Move touchpad / mouse or press any key to continue working
+          </p>
+        </div>
+
+        <button id="dismiss-idle-warning-btn" class="pill-btn" style="width: 100%; padding: 9px; font-size: 13px; justify-content: center; background: #22c55e;">
+          ⚡ I'm Working! (Keep Tracking)
+        </button>
+      </div>
+    </div>
+
+    <!-- ── OS PERMISSIONS MODAL (LIGHT THEME) ── -->
+    <div id="help-modal" class="modal-backdrop hidden">
+      <div class="modal-box">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #0f172a;">🛡 OS Permissions Diagnostic</h3>
+        <div id="help-content" style="font-size: 11px; color: #475569; line-height: 1.6; margin-bottom: 16px;">
+          Loading…
+        </div>
+        <button id="close-help-btn" class="pill-btn" style="width: 100%; justify-content: center; background: #64748b;">Close</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- ── RENDERER SCRIPT ── -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <script>
+      let trackingInterval = null;
+      let currentBankedSec = 0;
+      let todayTotalIdleSec = 0;
+
+      // DOM Elements
+      const loginSection      = document.getElementById('login-section');
+      const trackerSection    = document.getElementById('tracker-section');
+      const loginForm         = document.getElementById('login-form');
+      const loginError        = document.getElementById('login-error');
+      const loginBtn          = document.getElementById('login-btn');
+      const userEmailDisplay  = document.getElementById('user-email-display');
+
+      const startBtn          = document.getElementById('start-btn');
+      const activeButtonsGroup= document.getElementById('active-buttons-group');
+      const stopBtn           = document.getElementById('stop-btn');
+      const breakBtn          = document.getElementById('break-btn');
+      const resumeBtn         = document.getElementById('resume-btn');
+      const refreshBtn        = document.getElementById('refresh-btn');
+      const resetDailyBtn     = document.getElementById('reset-daily-btn');
+      const logoutBtn         = document.getElementById('logout-btn');
+      const flushBtn          = document.getElementById('flush-btn');
+      const snapBtn           = document.getElementById('snap-btn');
+      const headerSnapBtn     = document.getElementById('header-snap-btn');
+      const screenshotToast   = document.getElementById('screenshot-toast');
+      const screenshotToastTime = document.getElementById('screenshot-toast-time');
+      const helpBtn           = document.getElementById('help-btn');
+      const queueCount        = document.getElementById('queue-count');
+
+      const statusPillBanner  = document.getElementById('status-pill-banner');
+      const indicatorText     = document.getElementById('indicator-status-text');
+      const liveClockDigits   = document.getElementById('live-clock-digits');
+
+      const statDayActive     = document.getElementById('stat-day-active');
+      const statDayIdle       = document.getElementById('stat-day-idle');
+      const statDayTotal      = document.getElementById('stat-day-total');
+      const statWeekActive    = document.getElementById('stat-week-active');
+      const statWeekIdle      = document.getElementById('stat-week-idle');
+      const statWeekTotal     = document.getElementById('stat-week-total');
+
+      const projectSelect     = document.getElementById('project-select');
+      const taskSelect        = document.getElementById('task-select');
+
+      const idleWarningModal  = document.getElementById('idle-warning-modal');
+      const idleCountdownSec  = document.getElementById('idle-countdown-sec');
+      const dismissIdleBtn    = document.getElementById('dismiss-idle-warning-btn');
+
+      const helpModal         = document.getElementById('help-modal');
+      const helpContent       = document.getElementById('help-content');
+      const closeHelpBtn      = document.getElementById('close-help-btn');
+
+      // Formatting: 00h 00m 00s (shows exact real-time seconds for live validation)
+      function formatDurationHM(seconds) {
+        const s = Math.max(0, Math.floor(seconds || 0));
+        const hrs  = String(Math.floor(s / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+        const secs = String(s % 60).padStart(2, '0');
+        return `${hrs}h ${mins}m ${secs}s`;
+      }
+
+      // Formatting: 00:00:00
+      function formatClock(seconds) {
+        const s = Math.max(0, Math.floor(seconds || 0));
+        const hrs  = String(Math.floor(s / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+        const secs = String(s % 60).padStart(2, '0');
+        return `${hrs}:${mins}:${secs}`;
+      }
+
+      // Quick task selector helper
+      window.selectQuickTask = (project, task) => {
+        let pFound = false;
+        for (let opt of projectSelect.options) {
+          if (opt.text.toLowerCase().includes(project.toLowerCase())) {
+            projectSelect.value = opt.value;
+            pFound = true;
+            break;
+          }
+        }
+        if (!pFound) {
+          const newOpt = new Option(project, project.toLowerCase().replace(/\s+/g, '-'), true, true);
+          projectSelect.add(newOpt);
+        }
+        
+        const newOptTask = new Option(task, task.toLowerCase().replace(/\s+/g, '-'), true, true);
+        taskSelect.add(newOptTask);
+
+        // Start timer automatically on clicking task
+        startBtn.click();
+      };
+
+      // ── UI STATE MACHINE ──
+      function updateUIState(isTracking, currentSegmentStartTime, isOnBreak, breakStartTime, accumulatedWorkedSeconds, totalIdleSecondsToday, isAutoIdle) {
+        currentBankedSec = Number(accumulatedWorkedSeconds) || 0;
+        todayTotalIdleSec = Number(totalIdleSecondsToday) || 0;
+
+        if (trackingInterval) {
+          clearInterval(trackingInterval);
+          trackingInterval = null;
+        }
+
+        const renderMetrics = (activeSec) => {
+          statDayActive.innerText = formatDurationHM(activeSec);
+          statDayIdle.innerText   = formatDurationHM(todayTotalIdleSec);
+          statDayTotal.innerText  = formatDurationHM(activeSec + todayTotalIdleSec);
+
+          // Simulated Week (Day + 14h 13m)
+          statWeekActive.innerText = formatDurationHM(activeSec + 51180);
+          statWeekIdle.innerText   = formatDurationHM(todayTotalIdleSec + 60);
+          statWeekTotal.innerText  = formatDurationHM(activeSec + todayTotalIdleSec + 51240);
+        };
+
+        if (isAutoIdle) {
+          // Auto-Idle State:
+          startBtn.classList.add('hidden');
+          activeButtonsGroup.classList.remove('hidden');
+          breakBtn.classList.add('hidden');
+          resumeBtn.classList.remove('hidden');
+          stopBtn.classList.remove('hidden');
+
+          statusPillBanner.className = 'status-pill-banner tracking-idle';
+          indicatorText.innerText = '💤 IDLE PAUSED (TOUCH TO RESUME)';
+          indicatorText.style.color = '#dc2626';
+          liveClockDigits.innerText = formatClock(currentBankedSec);
+          renderMetrics(currentBankedSec);
+
+        } else if (isTracking) {
+          startBtn.classList.add('hidden');
+          activeButtonsGroup.classList.remove('hidden');
+
+          if (isOnBreak) {
+            // On Break State:
+            breakBtn.classList.add('hidden');
+            resumeBtn.classList.remove('hidden');
+            stopBtn.classList.remove('hidden');
+
+            statusPillBanner.className = 'status-pill-banner tracking-break';
+            indicatorText.innerText = '☕ ON BREAK (WORK PAUSED)';
+            indicatorText.style.color = '#b45309';
+
+            const bStart = breakStartTime || Date.now();
+            const tickBreak = () => {
+              const breakSec = Math.floor((Date.now() - bStart) / 1000);
+              liveClockDigits.innerText = formatClock(breakSec);
+              renderMetrics(currentBankedSec);
+            };
+            tickBreak();
+            trackingInterval = setInterval(tickBreak, 1000);
+
+          } else {
+            // Active Tracking State:
+            breakBtn.classList.remove('hidden');
+            resumeBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+
+            statusPillBanner.className = 'status-pill-banner tracking-active';
+            indicatorText.innerText = '● TRACKING IS ON';
+            indicatorText.style.color = '#15803d';
+
+            const tickActive = () => {
+              const segStart = currentSegmentStartTime || Date.now();
+              const elapsed = Math.max(0, Math.floor((Date.now() - segStart) / 1000));
+              const totalActive = currentBankedSec + elapsed;
+              liveClockDigits.innerText = formatClock(totalActive);
+              renderMetrics(totalActive);
+            };
+            tickActive();
+            trackingInterval = setInterval(tickActive, 1000);
+          }
+
+        } else {
+          // Stopped State:
+          startBtn.classList.remove('hidden');
+          activeButtonsGroup.classList.add('hidden');
+
+          statusPillBanner.className = 'status-pill-banner';
+          indicatorText.innerText = 'TRACKING IS OFF';
+          indicatorText.style.color = '#64748b';
+          liveClockDigits.innerText = formatClock(currentBankedSec);
+          renderMetrics(currentBankedSec);
+        }
+      }
+
+      // ── LOGIN ──
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loginBtn.disabled = true;
+        loginBtn.innerText = 'Signing in…';
+        loginError.classList.add('hidden');
+
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        try {
+          const res = await window.trackifyApi.login({ email, password });
+          try { await window.trackifyApi.registerDevice(); } catch(_) {}
+
+          userEmailDisplay.innerText = res.user?.email || email;
+          loginSection.classList.add('hidden');
+          trackerSection.classList.remove('hidden');
+
+          loadProjectsAndTasks();
+
+          // Restore today's banked time
+          try {
+            const st = await window.trackifyApi.getTimerStatus();
+            updateUIState(st.isTracking, st.currentSegmentStartTime, st.isOnBreak, st.breakStartTime, st.accumulatedWorkedSeconds, st.totalIdleSecondsToday, st.isAutoIdle);
+          } catch (_) {
+            updateUIState(false, null, false, null, 0, 0, false);
+          }
+
+        } catch (err) {
+          loginError.innerText = err?.message || 'Login failed. Please check credentials.';
+          loginError.classList.remove('hidden');
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.innerText = 'Sign In to Tracker';
+        }
+      });
+
+      // Load Projects & Tasks
+      async function loadProjectsAndTasks() {
+        try {
+          const projects = await window.trackifyApi.getProjects();
+          if (Array.isArray(projects) && projects.length > 0) {
+            projectSelect.innerHTML = projects.map(p => `<option value="${p._id || p.id}">${p.name}</option>`).join('');
+          }
+        } catch (_) {}
+
+        try {
+          const tasks = await window.trackifyApi.getTasks();
+          if (Array.isArray(tasks) && tasks.length > 0) {
+            taskSelect.innerHTML = tasks.map(t => `<option value="${t._id || t.id}">${t.title || t.name}</option>`).join('');
+          }
+        } catch (_) {}
+      }
+
+      // ── START TIMER ──
+      startBtn.addEventListener('click', async () => {
+        startBtn.disabled = true;
+        startBtn.innerText = 'Starting…';
+        try {
+          const pId = projectSelect.value;
+          const tId = taskSelect.value;
+          await window.trackifyApi.startTimer({ projectId: pId !== 'default' ? pId : null, taskId: tId !== 'default' ? tId : null });
+          updateUIState(true, Date.now(), false, null, currentBankedSec, todayTotalIdleSec, false);
+        } catch (err) {
+          alert('Could not start tracking: ' + (err?.message || err));
+        } finally {
+          startBtn.disabled = false;
+          startBtn.innerHTML = '▶&nbsp; Start Timer';
+        }
+      });
+
+      // ── TAKE A BREAK ──
+      breakBtn.addEventListener('click', async () => {
+        breakBtn.disabled = true;
+        try {
+          await window.trackifyApi.pauseBreak();
+        } catch (err) {
+          console.warn('Break pause error:', err);
+        } finally {
+          breakBtn.disabled = false;
+        }
+      });
+
+      // ── RESUME WORK ──
+      resumeBtn.addEventListener('click', async () => {
+        resumeBtn.disabled = true;
+        try {
+          await window.trackifyApi.resumeBreak();
+        } catch (err) {
+          console.warn('Resume error:', err);
+        } finally {
+          resumeBtn.disabled = false;
+        }
+      });
+
+      // ── STOP TIMER ──
+      stopBtn.addEventListener('click', async () => {
+        stopBtn.disabled = true;
+        try {
+          await window.trackifyApi.stopTimer();
+        } catch (err) {
+          console.warn('Stop error:', err);
+        } finally {
+          stopBtn.disabled = false;
+        }
+      });
+
+      // ── REFRESH ──
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.innerText = '🔄 Refreshing…';
+        await loadProjectsAndTasks();
+        try {
+          const st = await window.trackifyApi.getTimerStatus();
+          updateUIState(st.isTracking, st.currentSegmentStartTime, st.isOnBreak, st.breakStartTime, st.accumulatedWorkedSeconds, st.totalIdleSecondsToday, st.isAutoIdle);
+        } catch(_) {}
+        setTimeout(() => { refreshBtn.innerHTML = '<span>🔄</span> Refresh'; }, 500);
+      });
+
+      // ── MANUAL ENTRY & REPORTS (Open in Browser) ──
+      document.getElementById('manual-entry-btn').addEventListener('click', () => {
+        if (window.trackifyApi.openExternalUrl) {
+          window.trackifyApi.openExternalUrl('http://localhost:3000/manual-entry');
+        }
+      });
+
+      document.getElementById('reports-btn').addEventListener('click', () => {
+        if (window.trackifyApi.openExternalUrl) {
+          window.trackifyApi.openExternalUrl('http://localhost:3000/timesheet');
+        }
+      });
+
+      // ── FLUSH SYNC ──
+      flushBtn.addEventListener('click', async () => {
+        flushBtn.innerText = '⏳';
+        await window.trackifyApi.flushQueue();
+        refreshQueueCount();
+        setTimeout(() => { flushBtn.innerText = '🔄'; }, 600);
+      });
+
+      // ── SCREENSHOT TOAST NOTIFIER ──
+      let toastHideTimeout = null;
+      function showScreenshotToast(timeStr) {
+        if (screenshotToastTime) {
+          screenshotToastTime.innerText = timeStr || new Date().toLocaleTimeString();
+        }
+        if (screenshotToast) {
+          screenshotToast.classList.remove('hidden');
+          if (toastHideTimeout) clearTimeout(toastHideTimeout);
+          toastHideTimeout = setTimeout(() => {
+            screenshotToast.classList.add('hidden');
+          }, 3500);
+        }
+      }
+
+      if (window.trackifyApi.onScreenshotCaptured) {
+        window.trackifyApi.onScreenshotCaptured((data) => {
+          showScreenshotToast(data?.timestamp);
+        });
+      }
+
+      // ── SCREENSHOT SNAP BUTTONS ──
+      const triggerCapture = async (btn, defaultText) => {
+        btn.disabled = true;
+        btn.innerText = '⏳ Snapping…';
+        try {
+          await window.trackifyApi.captureScreenshotNow();
+          btn.innerText = '✅ Snapped!';
+          showScreenshotToast(new Date().toLocaleTimeString());
+        } catch (err) {
+          btn.innerText = '❌ Failed';
+        } finally {
+          setTimeout(() => {
+            btn.innerText = defaultText;
+            btn.disabled = false;
+          }, 2000);
+        }
+      };
+
+      if (headerSnapBtn) {
+        headerSnapBtn.addEventListener('click', () => triggerCapture(headerSnapBtn, '📸 Screenshot'));
+      }
+
+      snapBtn.addEventListener('click', () => triggerCapture(snapBtn, '📸 Snap'));
+
+      // ── RESET DAY ──
+      resetDailyBtn.addEventListener('click', async () => {
+        if (confirm("Reset today's recorded timer back to 00:00:00?")) {
+          await window.trackifyApi.resetDailyTimer();
+          updateUIState(false, null, false, null, 0, 0, false);
+        }
+      });
+
+      // ── LOGOUT ──
+      logoutBtn.addEventListener('click', () => {
+        if (confirm('Sign out of Trackify Agent?')) {
+          window.trackifyApi.stopTimer().catch(() => {});
+          trackerSection.classList.add('hidden');
+          loginSection.classList.remove('hidden');
+          updateUIState(false, null, false, null, 0, 0, false);
+        }
+      });
+
+      // ── QUEUE COUNT ──
+      async function refreshQueueCount() {
+        try {
+          const count = await window.trackifyApi.getQueueCount();
+          queueCount.innerText = count;
+        } catch(_) {}
+      }
+      setInterval(refreshQueueCount, 5000);
+
+      // ── USER ACTIVITY DETECTION (Touchpad, Mouse, Keys) ──
+      const onUserInteraction = () => {
+        if (idleWarningModal && !idleWarningModal.classList.contains('hidden')) {
+          idleWarningModal.classList.add('hidden');
+        }
+        window.trackifyApi.userActivityDetected();
+      };
+      window.addEventListener('mousemove', onUserInteraction);
+      window.addEventListener('keydown', onUserInteraction);
+      window.addEventListener('mousedown', onUserInteraction);
+      window.addEventListener('touchstart', onUserInteraction);
+
+      // Dismiss button in warning dialog
+      dismissIdleBtn.addEventListener('click', async () => {
+        idleWarningModal.classList.add('hidden');
+        await window.trackifyApi.userActivityDetected();
+      });
+
+      // ── IPC LISTENERS ──
+      window.trackifyApi.onTimerStatusChange((status) => {
+        updateUIState(
+          status.isTracking,
+          status.currentSegmentStartTime,
+          status.isOnBreak,
+          status.breakStartTime,
+          status.accumulatedWorkedSeconds,
+          status.totalIdleSecondsToday,
+          status.isAutoIdle
+        );
+        if (status.pendingQueueCount !== undefined) {
+          queueCount.innerText = status.pendingQueueCount;
+        }
+      });
+
+      // 5s Countdown Inactivity Warning
+      window.trackifyApi.onIdleWarning((data) => {
+        if (idleCountdownSec) {
+          idleCountdownSec.innerText = `${data.remainingSeconds}s`;
+        }
+        if (idleWarningModal) {
+          idleWarningModal.classList.remove('hidden');
+        }
+      });
+
+      window.trackifyApi.onIdleWarningDismissed(() => {
+        if (idleWarningModal) {
+          idleWarningModal.classList.add('hidden');
+        }
+      });
+
+      // ── PERMISSIONS MODAL ──
+      helpBtn.addEventListener('click', async () => {
+        const perm = await window.trackifyApi.getPermissions();
+        helpContent.innerHTML = `
+          <p style="margin-bottom: 6px;"><strong>Operating System:</strong> ${perm.platform}</p>
+          <ul style="margin-left: 16px; line-height: 1.6;">
+            ${perm.notes.map(n => `<li>${n}</li>`).join('')}
+          </ul>
+        `;
+        helpModal.classList.remove('hidden');
+      });
+      closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+    </script>
+  </body>
+</html>
