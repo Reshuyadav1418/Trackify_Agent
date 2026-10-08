@@ -5,7 +5,7 @@ export class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
   private baseUrl: string = (() => {
-    const raw = process.env.TRACKIFY_API_URL || process.env.API_URL || 'http://127.0.0.1:4000';
+    const raw = process.env.TRACKIFY_API_URL || process.env.API_URL || 'https://trackify-agent.onrender.com';
     return raw.endsWith('/api') ? raw : `${raw.replace(/\/+$/, '')}/api`;
   })();
 
