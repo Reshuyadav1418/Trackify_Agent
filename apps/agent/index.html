@@ -687,6 +687,7 @@
           </div>
         </div>
         <div class="header-right">
+          <button id="pin-btn" class="pill-btn" title="Keep Trackify window in front of other apps" style="background: #2563eb;">📌 On Top: ON</button>
           <button id="header-snap-btn" class="pill-btn" title="Capture Screenshot Now">📸 Screenshot</button>
           <button id="manual-entry-btn" class="pill-btn">✏️ Manual Entry</button>
           <button id="reports-btn" class="pill-btn">📊 Reports</button>
@@ -1246,7 +1247,8 @@
 
       if (window.trackifyApi.onScreenshotCaptured) {
         window.trackifyApi.onScreenshotCaptured((data) => {
-          showScreenshotToast(data?.timestamp);
+          // Quiet background capture - no intrusive popup toast per user request
+          console.log('[Renderer] Screenshot captured quietly at', data?.timestamp);
         });
       }
 
@@ -1335,14 +1337,9 @@
         }
       });
 
-      // 5s Countdown Inactivity Warning
+      // Inactivity Warning - silent state update, no popup alert per user request
       window.trackifyApi.onIdleWarning((data) => {
-        if (idleCountdownSec) {
-          idleCountdownSec.innerText = `${data.remainingSeconds}s`;
-        }
-        if (idleWarningModal) {
-          idleWarningModal.classList.remove('hidden');
-        }
+        // Silent transition
       });
 
       window.trackifyApi.onIdleWarningDismissed(() => {
@@ -1350,6 +1347,31 @@
           idleWarningModal.classList.add('hidden');
         }
       });
+
+      // ── ALWAYS ON TOP PIN TOGGLE ──
+      const pinBtn = document.getElementById('pin-btn');
+      if (pinBtn && window.trackifyApi && window.trackifyApi.toggleAlwaysOnTop) {
+        window.trackifyApi.isAlwaysOnTop().then((isOnTop) => {
+          updatePinUI(isOnTop);
+        }).catch(() => {});
+
+        pinBtn.addEventListener('click', async () => {
+          const isOnTop = await window.trackifyApi.toggleAlwaysOnTop();
+          updatePinUI(isOnTop);
+        });
+
+        function updatePinUI(isOnTop) {
+          if (isOnTop) {
+            pinBtn.innerText = '📌 On Top: ON';
+            pinBtn.style.background = '#2563eb';
+            pinBtn.title = 'Trackify is pinned in front of all other apps';
+          } else {
+            pinBtn.innerText = '📌 On Top: OFF';
+            pinBtn.style.background = '#64748b';
+            pinBtn.title = 'Trackify will hide behind other windows when blurred';
+          }
+        }
+      }
 
       // ── PERMISSIONS MODAL ──
       helpBtn.addEventListener('click', async () => {
