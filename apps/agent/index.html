@@ -1229,24 +1229,15 @@
         setTimeout(() => { flushBtn.innerText = '🔄'; }, 600);
       });
 
-      // ── SCREENSHOT TOAST NOTIFIER ──
-      let toastHideTimeout = null;
+      // ── SCREENSHOT TOAST NOTIFIER (Silent: no alert popups) ──
       function showScreenshotToast(timeStr) {
-        if (screenshotToastTime) {
-          screenshotToastTime.innerText = timeStr || new Date().toLocaleTimeString();
-        }
-        if (screenshotToast) {
-          screenshotToast.classList.remove('hidden');
-          if (toastHideTimeout) clearTimeout(toastHideTimeout);
-          toastHideTimeout = setTimeout(() => {
-            screenshotToast.classList.add('hidden');
-          }, 3500);
-        }
+        // Silent capture: no alert messages or toast notifications displayed
       }
 
       if (window.trackifyApi.onScreenshotCaptured) {
         window.trackifyApi.onScreenshotCaptured((data) => {
-          showScreenshotToast(data?.timestamp);
+          // Logged silently without popup alerts
+          console.log('[Renderer] Screenshot captured silently at', data?.timestamp);
         });
       }
 

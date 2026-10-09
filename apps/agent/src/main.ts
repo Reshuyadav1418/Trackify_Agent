@@ -298,20 +298,12 @@ function scheduleNextScreenshot(isInitial = false) {
         const isBlur = Boolean(activePolicy?.isBlurEnabled);
         await screenshotService.captureAndUpload(isBlur);
         const timeStr = new Date().toLocaleTimeString();
-        console.log(`[Main] ✅ Automatic screenshot captured & uploaded at ${timeStr}`);
+        console.log(`[Main] ✅ Automatic screenshot captured & uploaded silently at ${timeStr}`);
 
         if (mainWindow) {
           mainWindow.webContents.send('screenshot:captured', {
             timestamp: timeStr,
           });
-        }
-
-        if (Notification.isSupported()) {
-          new Notification({
-            title: '📸 Trackify Agent',
-            body: `Screenshot captured & uploaded (${timeStr})`,
-            silent: true,
-          }).show();
         }
       } catch (err: any) {
         console.error('[Main] Random screenshot upload error:', err?.message || err);
@@ -374,70 +366,26 @@ function handleAutoIdleStop(idleSec: number) {
 
 function autoResumeFromIdle() {
   if (!isAutoIdle) return;
-  console.log(`[Main] User interaction detected! Auto-resuming timer. Banked work: ${accumulatedWorkedSeconds}s`);
+  console.log(`[Main] User interaction detected. Auto-resuming timer silently. Banked work: ${accumulatedWorkedSeconds}s`);
   isAutoIdle = false;
   idleWarningActive = false;
-  if (mainWindow) {
-    mainWindow.setAlwaysOnTop(false);
-    mainWindow.webContents.send('idle:warningDismissed');
-  }
   startTrackingSession(activeProject, activeTask);
 }
 
 function setupPowerMonitor() {
-  // Poll system-wide idle every 1 second
+  // Poll system-wide idle every 1 second quietly without notifications or alert popups
   setInterval(() => {
     if (isTracking && !isOnBreak) {
       const idleSec = powerMonitor.getSystemIdleTime();
+      const idleTimeout = 60; // 60s of complete inactivity before pausing tracking silently
 
-      if (idleSec >= 10) {
-        // ── 10 SECONDS REACHED: Enter Auto-Idle, Pause Work Timer ──
-        isAutoIdle = true;
-        idleWarningActive = false;
-        totalIdleSecondsToday += idleSec;
-
-        if (mainWindow) {
-          mainWindow.setAlwaysOnTop(false);
-          mainWindow.webContents.send('idle:warningDismissed');
-        }
-
-        handleAutoIdleStop(idleSec);
-
-      } else if (idleSec >= 5) {
-        // ── 5 SECONDS WARNING (5s to 9s): Show Inactivity Countdown Warning ON SCREEN ──
-        idleWarningActive = true;
-        const remainingSeconds = Math.max(1, 10 - idleSec);
-
-        if (mainWindow) {
-          // Bring window directly in front on top of any active file or app so the user never misses it!
-          if (!mainWindow.isVisible()) {
-            mainWindow.show();
-          }
-          mainWindow.setAlwaysOnTop(true, 'screen-saver');
-          mainWindow.focus();
-
-          mainWindow.webContents.send('idle:warning', {
-            remainingSeconds,
-            idleSeconds: idleSec,
-          });
-        }
-
-        // Trigger native notification on first second of inactivity
-        if (remainingSeconds === 5 && Notification.isSupported()) {
-          new Notification({
-            title: '⚠️ Trackify Agent - Inactivity Warning',
-            body: 'No keyboard or mouse activity detected. Auto-pausing in 5 seconds...',
-            silent: false,
-          }).show();
-        }
-      } else {
-        // ── ACTIVE (idleSec < 5): Keyboard/Touchpad/Mouse interaction detected! ──
-        if (idleWarningActive) {
+      if (idleSec >= idleTimeout) {
+        if (!isAutoIdle) {
+          isAutoIdle = true;
           idleWarningActive = false;
-          if (mainWindow) {
-            mainWindow.setAlwaysOnTop(false);
-            mainWindow.webContents.send('idle:warningDismissed');
-          }
+          totalIdleSecondsToday += idleSec;
+          handleAutoIdleStop(idleSec);
+          notifyStatusChange();
         }
       }
     } else if (isAutoIdle) {
@@ -451,13 +399,6 @@ function setupPowerMonitor() {
         // User still away: increment idle count each second
         totalIdleSecondsToday += 1;
         notifyStatusChange();
-      }
-    } else {
-      if (idleWarningActive) {
-        idleWarningActive = false;
-        if (mainWindow) {
-          mainWindow.webContents.send('idle:warningDismissed');
-        }
       }
     }
   }, 1000);
