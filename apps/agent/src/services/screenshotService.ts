@@ -42,26 +42,28 @@ export class ScreenshotService {
         fs.writeFileSync(path.join(cacheDir, 'last_capture.jpg'), jpegBuffer);
       } catch (_) {}
 
-      const filename = `screenshot_${Date.now()}.jpg`;
-
-      console.log(`[ScreenshotService] Requesting presigned URL from API for ${jpegBuffer.length} bytes...`);
-      const presignRes = await apiClient.requestPresignedScreenshotUrl(filename, 'image/jpeg');
-
-      const s3Key = presignRes.s3Key || presignRes.key;
-      const uploadUrl = presignRes.uploadUrl;
-
-      if (!uploadUrl || !s3Key) {
-        throw new Error(`Invalid presigned response from API: ${JSON.stringify(presignRes)}`);
+      console.log(`[ScreenshotService] Uploading screenshot (${jpegBuffer.length} bytes) to API...`);
+      try {
+        const res = await apiClient.uploadScreenshotDirect(
+          jpegBuffer,
+          new Date().toISOString(),
+          85,
+          isBlurEnabled
+        );
+        console.log('[ScreenshotService] Screenshot saved successfully:', res.screenshot?._id);
+        return res;
+      } catch (uploadErr: any) {
+        console.warn('[ScreenshotService] Direct upload failed, attempting presigned S3 fallback:', uploadErr.message);
+        const filename = `screenshot_${Date.now()}.jpg`;
+        const presignRes = await apiClient.requestPresignedScreenshotUrl(filename, 'image/jpeg');
+        const s3Key = presignRes.s3Key || presignRes.key;
+        const uploadUrl = presignRes.uploadUrl;
+        if (uploadUrl && s3Key) {
+          await apiClient.uploadScreenshotToS3(uploadUrl, jpegBuffer, 'image/jpeg');
+          return await apiClient.confirmScreenshot(s3Key, new Date().toISOString(), 85, isBlurEnabled);
+        }
+        throw uploadErr;
       }
-
-      console.log(`[ScreenshotService] Uploading binary directly to S3/MinIO URL: ${uploadUrl}`);
-      await apiClient.uploadScreenshotToS3(uploadUrl, jpegBuffer, 'image/jpeg');
-
-      const capturedAt = new Date().toISOString();
-      console.log(`[ScreenshotService] Confirming screenshot upload for key: ${s3Key}`);
-      const confirmed = await apiClient.confirmScreenshot(s3Key, capturedAt, 85, isBlurEnabled);
-
-      return confirmed;
     } catch (err: any) {
       console.error('[ScreenshotService] Capture and upload failed:', err.message || err);
       throw err;

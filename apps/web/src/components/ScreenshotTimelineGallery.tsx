@@ -32,6 +32,15 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+const getValidImageUrl = (sc: any): string => {
+  if (!sc) return '';
+  if (sc.downloadUrl && !sc.downloadUrl.includes('localhost') && !sc.downloadUrl.includes('127.0.0.1')) {
+    return sc.downloadUrl;
+  }
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
+  return `${apiBase}/api/screenshots/${sc._id}/image`;
+};
+
 interface Props {
   forcedUserId?: string; // If specified, locks employee to this user
 }
@@ -885,13 +894,20 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                     >
                       {/* Image Thumbnail Container */}
                       <div className="relative aspect-video bg-slate-950 flex items-center justify-center overflow-hidden">
-                        {sc.downloadUrl ? (
+                        {sc ? (
                           <img
-                            src={sc.downloadUrl}
+                            src={getValidImageUrl(sc)}
                             alt="Desktop screenshot"
                             className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
                               sc.isBlurred ? 'blur-sm hover:blur-none' : ''
                             }`}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              const fallback = getValidImageUrl(sc);
+                              if (target.src !== fallback) {
+                                target.src = fallback;
+                              }
+                            }}
                           />
                         ) : (
                           <div className="p-4 text-center">
@@ -1000,11 +1016,18 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
 
             {/* Modal Image Display with Navigation Arrows */}
             <div className="relative aspect-video max-h-[70vh] bg-slate-950 flex items-center justify-center">
-              {activeZoomScreenshot.downloadUrl ? (
+              {activeZoomScreenshot ? (
                 <img
-                  src={activeZoomScreenshot.downloadUrl}
+                  src={getValidImageUrl(activeZoomScreenshot)}
                   alt="High-resolution view"
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const fallback = getValidImageUrl(activeZoomScreenshot);
+                    if (target.src !== fallback) {
+                      target.src = fallback;
+                    }
+                  }}
                 />
               ) : (
                 <p className="text-sm text-slate-400">No preview available</p>
@@ -1033,7 +1056,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
             <div className="p-3.5 bg-[var(--bg-main)] text-xs text-[var(--text-muted)] flex items-center justify-between border-t border-[var(--border-color)]">
               <span>Use ◀ and ▶ to navigate between screenshots &bull; ESC to exit</span>
               <a
-                href={activeZoomScreenshot.downloadUrl}
+                href={getValidImageUrl(activeZoomScreenshot)}
                 download
                 target="_blank"
                 rel="noreferrer"

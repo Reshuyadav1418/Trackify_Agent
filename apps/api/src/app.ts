@@ -22,7 +22,11 @@ export const createApp = () => {
   const app = express();
 
   // 1. Helmet security headers
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
 
   // 2. CORS configuration (dynamically reflects origin so credentials: true is accepted by browsers)
   app.use(
@@ -37,8 +41,9 @@ export const createApp = () => {
   // 3. Cookie parser
   app.use(cookieParser());
 
-  // 4. Body parser
-  app.use(express.json());
+  // 4. Body parser (increased for screenshots / attachments)
+  app.use(express.json({ limit: '25mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
   // 5. Rate limiting (relaxed in test env)
   if (process.env.NODE_ENV !== 'test') {

@@ -47,3 +47,24 @@ export const getPresignedDownloadUrl = async (s3Key: string, expiresInSeconds = 
   });
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 };
+
+export const uploadToS3Direct = async (s3Key: string, buffer: Buffer, contentType = 'image/jpeg'): Promise<void> => {
+  await ensureBucketExists();
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: s3Key,
+    Body: buffer,
+    ContentType: contentType,
+  });
+  await s3Client.send(command);
+};
+
+export const getS3ObjectStream = async (s3Key: string): Promise<any> => {
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: s3Key,
+  });
+  const res = await s3Client.send(command);
+  return res.Body;
+};
+

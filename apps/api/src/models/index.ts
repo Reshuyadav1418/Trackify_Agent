@@ -5,6 +5,7 @@ export * from './task.model';
 export * from './timeEntry.model';
 export * from './activitySample.model';
 export * from './screenshot.model';
+export * from './screenshotData.model';
 export * from './device.model';
 export * from './policy.model';
 export * from './consent.model';

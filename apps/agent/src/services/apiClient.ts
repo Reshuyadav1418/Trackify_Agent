@@ -118,6 +118,26 @@ export class ApiClient {
     });
     return res.data;
   }
+
+  public async uploadScreenshotDirect(
+    buffer: Buffer,
+    capturedAt: string = new Date().toISOString(),
+    activityScore: number = 85,
+    isBlurred: boolean = false,
+    timeEntryId?: string | null,
+    deviceId?: string | null
+  ) {
+    const base64 = buffer.toString('base64');
+    const res = await this.client.post('/screenshots/upload', {
+      imageBase64: base64,
+      capturedAt,
+      activityScore,
+      isBlurred,
+      timeEntryId,
+      deviceId,
+    });
+    return res.data;
+  }
 }
 
 export const apiClient = new ApiClient();
