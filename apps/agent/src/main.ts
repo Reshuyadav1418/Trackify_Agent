@@ -199,12 +199,12 @@ function handlePauseBreak(isAuto: boolean = false) {
   if (currentSegmentStartTime) {
     const elapsedSec = Math.max(0, Math.floor((now - currentSegmentStartTime) / 1000));
     if (isAuto) {
-      // Inactivity timeout provided by server (e.g., 5 min)
-      const timeoutSec = (activePolicy?.idleTimeoutMinutes || 5) * 60;
+      // Inactivity timeout: 10 seconds deducted upon entering idle auto-break
+      const timeoutSec = 10;
       const activeWorkSec = Math.max(0, elapsedSec - timeoutSec);
       accumulatedWorkedSeconds += activeWorkSec;
       totalIdleSecondsToday += timeoutSec;
-      console.log(`[Main] Auto-Break applied. Inactivity deducted: ${timeoutSec}s. Banked active work: ${accumulatedWorkedSeconds}s`);
+      console.log(`[Main] Auto-Break applied (10s inactivity). Deducted: ${timeoutSec}s. Banked active work: ${accumulatedWorkedSeconds}s`);
     } else {
       accumulatedWorkedSeconds += elapsedSec;
       console.log(`[Main] Manual break taken. Banked active work: ${accumulatedWorkedSeconds}s`);
@@ -360,8 +360,8 @@ async function handleStopTracking(resetDaily = false) {
 function logMinuteSample() {
   if (!isTracking || isOnBreak || !activeUser) return;
 
-  const timeoutMinutes = activePolicy?.idleTimeoutMinutes || 5;
-  const metrics = inputTracker.getMinuteMetrics(timeoutMinutes * 60);
+  const timeoutSec = 10;
+  const metrics = inputTracker.getMinuteMetrics(timeoutSec);
   const minuteBucket = new Date().toISOString().slice(0, 16);
 
   localQueue.enqueueActivitySample({
@@ -443,15 +443,15 @@ function notifyStatusChange() {
 function setupPowerMonitor() {
   // Poll system idle time every 1 second
   setInterval(() => {
-    const timeoutMinutes = activePolicy?.idleTimeoutMinutes || 5;
-    const idleTimeoutSec = timeoutMinutes * 60; // 5 minutes = 300s
-    const warningThresholdSec = Math.max(10, idleTimeoutSec - 30); // 30s countdown before auto-break
+    // Idle limit configured to 10 seconds; countdown warning begins at 5 seconds
+    const idleTimeoutSec = 10;
+    const warningThresholdSec = 5;
 
     if (isTracking && !isOnBreak) {
       const idleSec = powerMonitor.getSystemIdleTime();
 
       if (idleSec >= idleTimeoutSec) {
-        // ── 5 MINUTES INACTIVITY REACHED: Apply Auto-Break, Pause Work Timer ──
+        // ── 10 SECONDS INACTIVITY REACHED: Apply Auto-Break, Pause Work Timer ──
         console.log(`[Main] User inactive for ${idleSec}s (threshold: ${idleTimeoutSec}s). Applying Auto-Break.`);
         idleWarningActive = false;
 
@@ -464,14 +464,14 @@ function setupPowerMonitor() {
 
         if (Notification.isSupported()) {
           new Notification({
-            title: '☕ Trackify Agent - Auto Break',
-            body: `Inactive for ${timeoutMinutes} minutes. Work timer paused automatically.`,
+            title: 'Trackify Agent - Auto Break',
+            body: 'Inactive for 10 seconds. Work timer paused automatically.',
             silent: false,
           }).show();
         }
 
       } else if (idleSec >= warningThresholdSec) {
-        // ── 30-SECOND WARNING COUNTDOWN: Notify user on screen ──
+        // ── 5-SECOND WARNING COUNTDOWN: Notify user on screen ──
         idleWarningActive = true;
         const remainingSeconds = Math.max(1, idleTimeoutSec - idleSec);
 
@@ -485,11 +485,11 @@ function setupPowerMonitor() {
           mainWindow.webContents.send('idle:warning', {
             remainingSeconds,
             idleSeconds: idleSec,
-            timeoutMinutes,
+            timeoutSeconds: idleTimeoutSec,
           });
         }
       } else {
-        // Active work interaction
+        // Active work interaction (idleSec < 5s): User is active, dismiss countdown warning
         if (idleWarningActive) {
           idleWarningActive = false;
           if (mainWindow) {
@@ -499,17 +499,17 @@ function setupPowerMonitor() {
         }
       }
     } else if (isAutoIdle && isOnBreak) {
-      // User is currently paused on auto-break: check if they touched mouse or keyboard
+      // User is currently paused on auto-break: if they touch mouse or keyboard, resume automatically
       const idleSec = powerMonitor.getSystemIdleTime();
       if (idleSec < 2) {
-        if (mainWindow) {
-          mainWindow.webContents.send('idle:userReturned');
-        }
+        console.log(`[Main] User activity detected after auto-break (${idleSec}s idle). Resuming tracking as normal.`);
+        handleResumeBreak();
       }
     } else {
       if (idleWarningActive) {
         idleWarningActive = false;
         if (mainWindow) {
+          mainWindow.setAlwaysOnTop(false);
           mainWindow.webContents.send('idle:warningDismissed');
         }
       }
@@ -686,6 +686,10 @@ function registerIpcHandlers() {
         mainWindow.setAlwaysOnTop(false);
         mainWindow.webContents.send('idle:warningDismissed');
       }
+    }
+    if (isAutoIdle && isOnBreak) {
+      console.log('[Main] User interacted with app during auto-idle. Resuming tracking as normal.');
+      handleResumeBreak();
     }
     return { success: true };
   });
