@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, powerMonitor } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, powerMonitor, Notification } from 'electron';
 import * as path from 'path';
 import { autoUpdater } from 'electron-updater';
 import { apiClient } from './services/apiClient';
@@ -163,8 +163,8 @@ function startTrackingSession(project: any, task: any) {
     }
   }, 60000);
 
-  // Schedule random screenshot timer
-  scheduleNextScreenshot();
+  // Schedule screenshot timer (initial fast check in 25-35s, then recurring)
+  scheduleNextScreenshot(true);
 
   notifyStatusChange();
 }
@@ -280,32 +280,45 @@ function logMinuteSample() {
   notifyStatusChange();
 }
 
-function scheduleNextScreenshot() {
+function scheduleNextScreenshot(isInitial = false) {
   if (screenshotTimer) clearTimeout(screenshotTimer);
   if (!isTracking) return;
 
   const intervalMin = activePolicy?.screenshotIntervalMinutes || 5;
-  // Random time within interval
-  const randomDelayMs = (Math.floor(Math.random() * (intervalMin * 60 - 30)) + 30) * 1000;
+  // If first start, take initial verification screenshot in 25-35s; otherwise within policy interval
+  const delayMs = isInitial
+    ? (Math.floor(Math.random() * 10) + 25) * 1000
+    : (Math.floor(Math.random() * (intervalMin * 60 - 30)) + 30) * 1000;
 
-  console.log(`[Main] Next random screenshot scheduled in ${Math.round(randomDelayMs / 1000)} seconds.`);
+  console.log(`[Main] Next screenshot scheduled in ${Math.round(delayMs / 1000)} seconds (interval: ${intervalMin}m, isInitial: ${isInitial}).`);
 
   screenshotTimer = setTimeout(async () => {
-    if (isTracking) {
+    if (isTracking && !isOnBreak) {
       try {
         const isBlur = Boolean(activePolicy?.isBlurEnabled);
         await screenshotService.captureAndUpload(isBlur);
+        const timeStr = new Date().toLocaleTimeString();
+        console.log(`[Main] ✅ Automatic screenshot captured & uploaded at ${timeStr}`);
+
         if (mainWindow) {
           mainWindow.webContents.send('screenshot:captured', {
-            timestamp: new Date().toLocaleTimeString(),
+            timestamp: timeStr,
           });
         }
-      } catch (err) {
-        console.error('[Main] Random screenshot upload error:', err);
+
+        if (Notification.isSupported()) {
+          new Notification({
+            title: '📸 Trackify Agent',
+            body: `Screenshot captured & uploaded (${timeStr})`,
+            silent: true,
+          }).show();
+        }
+      } catch (err: any) {
+        console.error('[Main] Random screenshot upload error:', err?.message || err);
       }
-      scheduleNextScreenshot();
+      scheduleNextScreenshot(false);
     }
-  }, randomDelayMs);
+  }, delayMs);
 }
 
 function notifyStatusChange() {
@@ -365,6 +378,7 @@ function autoResumeFromIdle() {
   isAutoIdle = false;
   idleWarningActive = false;
   if (mainWindow) {
+    mainWindow.setAlwaysOnTop(false);
     mainWindow.webContents.send('idle:warningDismissed');
   }
   startTrackingSession(activeProject, activeTask);
@@ -383,27 +397,45 @@ function setupPowerMonitor() {
         totalIdleSecondsToday += idleSec;
 
         if (mainWindow) {
+          mainWindow.setAlwaysOnTop(false);
           mainWindow.webContents.send('idle:warningDismissed');
         }
 
         handleAutoIdleStop(idleSec);
 
       } else if (idleSec >= 5) {
-        // ── 5 SECONDS WARNING (5s to 9s): Show Inactivity Countdown Warning ──
+        // ── 5 SECONDS WARNING (5s to 9s): Show Inactivity Countdown Warning ON SCREEN ──
         idleWarningActive = true;
         const remainingSeconds = Math.max(1, 10 - idleSec);
 
         if (mainWindow) {
+          // Bring window directly in front on top of any active file or app so the user never misses it!
+          if (!mainWindow.isVisible()) {
+            mainWindow.show();
+          }
+          mainWindow.setAlwaysOnTop(true, 'screen-saver');
+          mainWindow.focus();
+
           mainWindow.webContents.send('idle:warning', {
             remainingSeconds,
             idleSeconds: idleSec,
           });
+        }
+
+        // Trigger native notification on first second of inactivity
+        if (remainingSeconds === 5 && Notification.isSupported()) {
+          new Notification({
+            title: '⚠️ Trackify Agent - Inactivity Warning',
+            body: 'No keyboard or mouse activity detected. Auto-pausing in 5 seconds...',
+            silent: false,
+          }).show();
         }
       } else {
         // ── ACTIVE (idleSec < 5): Keyboard/Touchpad/Mouse interaction detected! ──
         if (idleWarningActive) {
           idleWarningActive = false;
           if (mainWindow) {
+            mainWindow.setAlwaysOnTop(false);
             mainWindow.webContents.send('idle:warningDismissed');
           }
         }
@@ -580,6 +612,7 @@ function registerIpcHandlers() {
   ipcMain.handle('idle:dismissWarning', () => {
     idleWarningActive = false;
     if (mainWindow) {
+      mainWindow.setAlwaysOnTop(false);
       mainWindow.webContents.send('idle:warningDismissed');
     }
     return { success: true };
@@ -589,6 +622,7 @@ function registerIpcHandlers() {
     if (idleWarningActive) {
       idleWarningActive = false;
       if (mainWindow) {
+        mainWindow.setAlwaysOnTop(false);
         mainWindow.webContents.send('idle:warningDismissed');
       }
     }
