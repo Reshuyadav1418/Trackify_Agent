@@ -21,6 +21,9 @@ import { getHelloShared } from '@teamlogger/shared';
 export const createApp = () => {
   const app = express();
 
+  // Trust reverse proxy (Render, Vercel, Cloudflare)
+  app.set('trust proxy', 1);
+
   // 1. Helmet security headers
   app.use(
     helmet({

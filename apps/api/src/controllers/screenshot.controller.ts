@@ -6,6 +6,12 @@ import { getPresignedUploadUrl, uploadToS3Direct, getS3ObjectStream } from '../s
 import { logAudit } from '../services/audit.service';
 import { thumbnailQueue } from '../queues/client';
 
+const getBaseUrl = (req: Request): string => {
+  const host = req.get('host') || 'localhost:4000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
+};
+
 export const presignScreenshot = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) throw new AppError('Unauthorized', 401);
@@ -86,7 +92,7 @@ export const uploadDirectScreenshot = async (req: Request, res: Response, next: 
       console.warn('[API] Could not enqueue thumbnail job:', (qErr as Error).message);
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     res.status(201).json({
       message: 'Screenshot uploaded and saved successfully',
       screenshot: {
@@ -141,7 +147,7 @@ export const confirmScreenshot = async (req: Request, res: Response, next: NextF
       console.warn('[API] Could not enqueue thumbnail job:', (qErr as Error).message);
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     res.status(201).json({
       message: 'Screenshot metadata saved',
       screenshot: {
@@ -229,7 +235,7 @@ export const getScreenshotById = async (req: Request, res: Response, next: NextF
       throw new AppError('Screenshot not found or access denied', 404);
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     const downloadUrl = `${baseUrl}/api/screenshots/${screenshot._id}/image`;
 
     // SPEC Rule: Every screenshot view is written to an audit log
@@ -287,7 +293,7 @@ export const getScreenshots = async (req: Request, res: Response, next: NextFunc
       .sort({ capturedAt: -1 })
       .limit(300);
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     const screenshotsWithUrls = screenshots.map((sc) => {
       const downloadUrl = `${baseUrl}/api/screenshots/${sc._id}/image`;
       return {
