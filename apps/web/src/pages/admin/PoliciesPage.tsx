@@ -12,6 +12,7 @@ export const PoliciesPage: React.FC = () => {
 
   // Form state
   const [intervalMinutes, setIntervalMinutes] = useState(10);
+  const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState(5);
   const [isBlurEnabled, setIsBlurEnabled] = useState(false);
   const [retentionDays, setRetentionDays] = useState(90);
   const [consentText, setConsentText] = useState(
@@ -46,6 +47,7 @@ export const PoliciesPage: React.FC = () => {
     createPolicyMutation.mutate({
       version: nextVersion,
       screenshotIntervalMinutes: intervalMinutes,
+      idleTimeoutMinutes,
       isBlurEnabled,
       retentionDays,
       consentText,
@@ -189,9 +191,9 @@ export const PoliciesPage: React.FC = () => {
               </button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.85rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>Screenshot Interval (Mins)</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>Screenshot (Mins)</label>
                   <input
                     type="number"
                     min={1}
@@ -204,7 +206,20 @@ export const PoliciesPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>Data Retention (Days)</label>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>Idle Limit (Mins)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    required
+                    value={idleTimeoutMinutes}
+                    onChange={(e) => setIdleTimeoutMinutes(Number(e.target.value))}
+                    className="input-custom"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>Retention (Days)</label>
                   <input
                     type="number"
                     min={7}

@@ -93,6 +93,7 @@ export type RegisterDeviceInput = z.infer<typeof RegisterDeviceSchema>;
 export const CreatePolicySchema = z.object({
   version: z.number().positive(),
   screenshotIntervalMinutes: z.number().min(1).default(5),
+  idleTimeoutMinutes: z.number().min(1).default(5).optional(),
   isBlurEnabled: z.boolean().default(false),
   retentionDays: z.number().min(1).default(30),
   consentText: z.string().min(1),
@@ -115,8 +116,30 @@ export type StartTimerInput = z.infer<typeof StartTimerSchema>;
 
 export const StopTimerSchema = z.object({
   timeEntryId: z.string().optional(),
+  durationSeconds: z.number().optional(),
+  breakSeconds: z.number().optional(),
 });
 export type StopTimerInput = z.infer<typeof StopTimerSchema>;
+
+// Time Entries Sync Schema (for syncing offline time records)
+export const SyncTimeEntryItemSchema = z.object({
+  id: z.string().optional(),
+  projectId: z.string().optional().nullable(),
+  taskId: z.string().optional().nullable(),
+  description: z.string().optional(),
+  start: z.string().datetime().or(z.date()),
+  end: z.string().datetime().or(z.date()).optional().nullable(),
+  durationSeconds: z.number().default(0),
+  breakSeconds: z.number().optional().default(0),
+  isManualEdit: z.boolean().optional().default(false),
+  isSync: z.boolean().optional().default(true),
+});
+export type SyncTimeEntryItem = z.infer<typeof SyncTimeEntryItemSchema>;
+
+export const SyncTimeEntriesSchema = z.object({
+  entries: z.array(SyncTimeEntryItemSchema),
+});
+export type SyncTimeEntriesInput = z.infer<typeof SyncTimeEntriesSchema>;
 
 // Manual Entry Schemas
 export const CreateManualEntrySchema = z.object({
@@ -144,6 +167,7 @@ export const ActivitySampleSchema = z.object({
   mouseCount: z.number().min(0),
   isIdle: z.boolean().optional().default(false),
   activeWindowTitle: z.string().optional(),
+  isSync: z.boolean().optional().default(false),
 });
 
 export const BatchActivitySchema = z.object({

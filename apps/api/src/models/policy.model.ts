@@ -3,6 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 export interface IPolicy extends Document {
   version: number;
   screenshotIntervalMinutes: number;
+  idleTimeoutMinutes: number;
   isBlurEnabled: boolean;
   retentionDays: number;
   consentText: string;
@@ -22,7 +23,12 @@ const policySchema = new Schema<IPolicy>(
     screenshotIntervalMinutes: {
       type: Number,
       required: true,
-      default: 10,
+      default: 5,
+    },
+    idleTimeoutMinutes: {
+      type: Number,
+      required: true,
+      default: 5,
     },
     isBlurEnabled: {
       type: Boolean,

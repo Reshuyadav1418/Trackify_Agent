@@ -68,8 +68,17 @@ export class ApiClient {
     return res.data;
   }
 
-  public async stopTimer() {
-    const res = await this.client.post('/timers/stop');
+  public async stopTimer(timeEntryId?: string, durationSeconds?: number, breakSeconds?: number) {
+    const res = await this.client.post('/timers/stop', {
+      timeEntryId,
+      durationSeconds,
+      breakSeconds,
+    });
+    return res.data;
+  }
+
+  public async syncTimeEntries(entries: any[]) {
+    const res = await this.client.post('/time-entries/sync', { entries });
     return res.data;
   }
 

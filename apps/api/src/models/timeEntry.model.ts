@@ -16,6 +16,7 @@ export interface ITimeEntry extends Document {
   start: Date;
   end?: Date | null;
   durationSeconds: number;
+  breakSeconds: number;
   isManualEdit: boolean;
   reason?: string;
   isStale?: boolean;
@@ -64,6 +65,10 @@ const timeEntrySchema = new Schema<ITimeEntry>(
       default: null,
     },
     durationSeconds: {
+      type: Number,
+      default: 0,
+    },
+    breakSeconds: {
       type: Number,
       default: 0,
     },

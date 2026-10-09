@@ -22,6 +22,7 @@ export interface Task {
 export interface Policy {
   version: number;
   screenshotIntervalMinutes: number;
+  idleTimeoutMinutes: number;
   isBlurEnabled: boolean;
   retentionDays: number;
   consentText: string;
@@ -45,6 +46,31 @@ export interface ActivitySample {
   isIdle: boolean;
   timestamp: string;
   windowTitle?: string;
+  isSync: boolean; // Flag to indicate if synced to server
+}
+
+export interface OfflineTimeEntry {
+  id: string;
+  userId: string;
+  projectId?: string | null;
+  taskId?: string | null;
+  description?: string;
+  start: string;
+  end: string | null;
+  durationSeconds: number; // Active work time
+  breakSeconds: number; // Break time
+  isSync: boolean; // Flag to indicate if synced to server
+  createdAt: string;
+  syncedAt?: string | null;
+}
+
+export interface OfflineScreenshot {
+  id: string;
+  filePath: string;
+  capturedAt: string;
+  activityScore: number;
+  isBlurred: boolean;
+  isSync: boolean; // Flag to indicate if synced to server
 }
 
 export interface IdlePromptData {

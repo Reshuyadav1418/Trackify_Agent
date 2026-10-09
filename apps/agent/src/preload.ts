@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('trackifyApi', {
 
   // Queue & Sync & Screenshot
   getQueueCount: () => ipcRenderer.invoke('queue:count'),
+  getSyncStatus: () => ipcRenderer.invoke('sync:status'),
   flushQueue: () => ipcRenderer.invoke('queue:flush'),
   captureScreenshotNow: () => ipcRenderer.invoke('screenshot:captureNow'),
 
@@ -31,7 +32,10 @@ contextBridge.exposeInMainWorld('trackifyApi', {
   onTimerStatusChange: (callback: (status: any) => void) => {
     ipcRenderer.on('timer:statusChange', (_event, status) => callback(status));
   },
-  onIdleWarning: (callback: (data: { remainingSeconds: number; idleSeconds: number }) => void) => {
+  onSyncStatusChange: (callback: (status: any) => void) => {
+    ipcRenderer.on('sync:statusChange', (_event, status) => callback(status));
+  },
+  onIdleWarning: (callback: (data: { remainingSeconds: number; idleSeconds: number; timeoutMinutes: number }) => void) => {
     ipcRenderer.on('idle:warning', (_event, data) => callback(data));
   },
   onIdleWarningDismissed: (callback: () => void) => {
@@ -39,6 +43,9 @@ contextBridge.exposeInMainWorld('trackifyApi', {
   },
   onIdleDetected: (callback: (data: any) => void) => {
     ipcRenderer.on('idle:detected', (_event, data) => callback(data));
+  },
+  onUserReturned: (callback: () => void) => {
+    ipcRenderer.on('idle:userReturned', () => callback());
   },
   onPolicyUpdate: (callback: (policy: any) => void) => {
     ipcRenderer.on('policy:update', (_event, policy) => callback(policy));

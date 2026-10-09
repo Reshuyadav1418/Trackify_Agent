@@ -51,27 +51,38 @@ export const stopTimer = async (req: Request, res: Response, next: NextFunction)
   try {
     if (!req.user) throw new AppError('Unauthorized', 401);
     const userId = req.user.userId;
-    const { timeEntryId } = req.body;
+    const { timeEntryId, durationSeconds: clientDurationSeconds, breakSeconds: clientBreakSeconds } = req.body;
 
     let timeEntry;
     if (timeEntryId) {
       timeEntry = await TimeEntryModel.findOne({ _id: timeEntryId, userId, end: null });
     } else {
-      timeEntry = await TimeEntryModel.findOne({ userId, end: null });
+      timeEntry = await TimeEntryModel.findOne({ userId, end: null }).sort({ start: -1 });
     }
 
     if (!timeEntry) {
-      throw new AppError('No active timer found to stop', 404);
+      res.json({ message: 'No active timer found to stop (state synchronized)', timeEntry: null });
+      return;
     }
 
     const stopTime = new Date();
-    const durationSeconds = Math.max(0, Math.round((stopTime.getTime() - new Date(timeEntry.start).getTime()) / 1000));
+    const rawElapsed = Math.max(0, Math.round((stopTime.getTime() - new Date(timeEntry.start).getTime()) / 1000));
+
+    // Use client duration if accurately calculated by agent (excluding breaks and auto-idle), otherwise fallback
+    const finalDuration = (typeof clientDurationSeconds === 'number' && clientDurationSeconds >= 0)
+      ? clientDurationSeconds
+      : rawElapsed;
+
+    const breakSeconds = (typeof clientBreakSeconds === 'number' && clientBreakSeconds >= 0)
+      ? clientBreakSeconds
+      : 0;
 
     // Stale-timer guard: flag timers running more than 12 hours (43200 seconds)
-    const isStale = durationSeconds > 43200;
+    const isStale = rawElapsed > 43200;
 
     timeEntry.end = stopTime;
-    timeEntry.durationSeconds = durationSeconds;
+    timeEntry.durationSeconds = finalDuration;
+    timeEntry.breakSeconds = breakSeconds;
     timeEntry.isStale = isStale;
 
     await timeEntry.save();

@@ -53,16 +53,32 @@ export class ScreenshotService {
         console.log('[ScreenshotService] Screenshot saved successfully:', res.screenshot?._id);
         return res;
       } catch (uploadErr: any) {
-        console.warn('[ScreenshotService] Direct upload failed, attempting presigned S3 fallback:', uploadErr.message);
-        const filename = `screenshot_${Date.now()}.jpg`;
-        const presignRes = await apiClient.requestPresignedScreenshotUrl(filename, 'image/jpeg');
-        const s3Key = presignRes.s3Key || presignRes.key;
-        const uploadUrl = presignRes.uploadUrl;
-        if (uploadUrl && s3Key) {
-          await apiClient.uploadScreenshotToS3(uploadUrl, jpegBuffer, 'image/jpeg');
-          return await apiClient.confirmScreenshot(s3Key, new Date().toISOString(), 85, isBlurEnabled);
+        console.warn('[ScreenshotService] Online upload failed (offline / network error):', uploadErr.message);
+
+        // Save locally in pending_screenshots with isSync: false flag
+        try {
+          const offlineId = `sc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+          const pendingDir = path.join(app.getPath('userData'), 'pending_screenshots');
+          if (!fs.existsSync(pendingDir)) fs.mkdirSync(pendingDir, { recursive: true });
+          const filePath = path.join(pendingDir, `${offlineId}.jpg`);
+          fs.writeFileSync(filePath, jpegBuffer);
+
+          const { localQueue } = require('./sqliteQueue');
+          localQueue.enqueueScreenshot({
+            id: offlineId,
+            filePath,
+            capturedAt: new Date().toISOString(),
+            activityScore: 85,
+            isBlurred: isBlurEnabled,
+            isSync: false,
+          });
+
+          console.log(`[ScreenshotService] Saved offline screenshot locally (isSync: false): ${filePath}`);
+          return { success: true, offline: true, id: offlineId };
+        } catch (queueErr: any) {
+          console.error('[ScreenshotService] Could not save offline screenshot locally:', queueErr);
+          throw uploadErr;
         }
-        throw uploadErr;
       }
     } catch (err: any) {
       console.error('[ScreenshotService] Capture and upload failed:', err.message || err);

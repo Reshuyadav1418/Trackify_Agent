@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getHelloShared = exports.ConfirmScreenshotSchema = exports.PresignScreenshotSchema = exports.BatchActivitySchema = exports.ActivitySampleSchema = exports.UpdateManualEntrySchema = exports.CreateManualEntrySchema = exports.StopTimerSchema = exports.StartTimerSchema = exports.AcceptConsentSchema = exports.CreatePolicySchema = exports.RegisterDeviceSchema = exports.UpdateTaskSchema = exports.CreateTaskSchema = exports.UpdateProjectSchema = exports.CreateProjectSchema = exports.UpdateTeamSchema = exports.CreateTeamSchema = exports.UpdateUserSchema = exports.CreateUserSchema = exports.LoginSchema = exports.UserSchema = exports.DEFAULT_SCREENSHOT_BUCKET = exports.APP_NAME = exports.UserRoleSchema = void 0;
+exports.getHelloShared = exports.ConfirmScreenshotSchema = exports.PresignScreenshotSchema = exports.BatchActivitySchema = exports.ActivitySampleSchema = exports.UpdateManualEntrySchema = exports.CreateManualEntrySchema = exports.SyncTimeEntriesSchema = exports.SyncTimeEntryItemSchema = exports.StopTimerSchema = exports.StartTimerSchema = exports.AcceptConsentSchema = exports.CreatePolicySchema = exports.RegisterDeviceSchema = exports.UpdateTaskSchema = exports.CreateTaskSchema = exports.UpdateProjectSchema = exports.CreateProjectSchema = exports.UpdateTeamSchema = exports.CreateTeamSchema = exports.UpdateUserSchema = exports.CreateUserSchema = exports.LoginSchema = exports.UserSchema = exports.DEFAULT_SCREENSHOT_BUCKET = exports.APP_NAME = exports.UserRoleSchema = void 0;
 const zod_1 = require("zod");
 // Roles
 exports.UserRoleSchema = zod_1.z.enum(['admin', 'manager', 'employee']);
@@ -70,6 +70,7 @@ exports.RegisterDeviceSchema = zod_1.z.object({
 exports.CreatePolicySchema = zod_1.z.object({
     version: zod_1.z.number().positive(),
     screenshotIntervalMinutes: zod_1.z.number().min(1).default(5),
+    idleTimeoutMinutes: zod_1.z.number().min(1).default(5).optional(),
     isBlurEnabled: zod_1.z.boolean().default(false),
     retentionDays: zod_1.z.number().min(1).default(30),
     consentText: zod_1.z.string().min(1),
@@ -86,6 +87,24 @@ exports.StartTimerSchema = zod_1.z.object({
 });
 exports.StopTimerSchema = zod_1.z.object({
     timeEntryId: zod_1.z.string().optional(),
+    durationSeconds: zod_1.z.number().optional(),
+    breakSeconds: zod_1.z.number().optional(),
+});
+// Time Entries Sync Schema (for syncing offline time records)
+exports.SyncTimeEntryItemSchema = zod_1.z.object({
+    id: zod_1.z.string().optional(),
+    projectId: zod_1.z.string().optional().nullable(),
+    taskId: zod_1.z.string().optional().nullable(),
+    description: zod_1.z.string().optional(),
+    start: zod_1.z.string().datetime().or(zod_1.z.date()),
+    end: zod_1.z.string().datetime().or(zod_1.z.date()).optional().nullable(),
+    durationSeconds: zod_1.z.number().default(0),
+    breakSeconds: zod_1.z.number().optional().default(0),
+    isManualEdit: zod_1.z.boolean().optional().default(false),
+    isSync: zod_1.z.boolean().optional().default(true),
+});
+exports.SyncTimeEntriesSchema = zod_1.z.object({
+    entries: zod_1.z.array(exports.SyncTimeEntryItemSchema),
 });
 // Manual Entry Schemas
 exports.CreateManualEntrySchema = zod_1.z.object({
@@ -109,6 +128,7 @@ exports.ActivitySampleSchema = zod_1.z.object({
     mouseCount: zod_1.z.number().min(0),
     isIdle: zod_1.z.boolean().optional().default(false),
     activeWindowTitle: zod_1.z.string().optional(),
+    isSync: zod_1.z.boolean().optional().default(false),
 });
 exports.BatchActivitySchema = zod_1.z.object({
     deviceId: zod_1.z.string().optional(),

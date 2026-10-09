@@ -103,4 +103,70 @@ router.patch(
   }
 );
 
+// POST /api/time-entries/sync -> sync offline time entries batch
+router.post(
+  '/sync',
+  authenticateToken,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) throw new AppError('Unauthorized', 401);
+      const userId = req.user.userId;
+      const { entries } = req.body;
+
+      if (!Array.isArray(entries) || entries.length === 0) {
+        res.json({ message: 'No entries to sync', syncedCount: 0, syncedIds: [] });
+        return;
+      }
+
+      const syncedIds: string[] = [];
+      for (const item of entries) {
+        if (!item.start) continue;
+
+        const start = new Date(item.start);
+        const durationSeconds = Number(item.durationSeconds) || 0;
+        const breakSeconds = Number(item.breakSeconds) || 0;
+        const end = item.end ? new Date(item.end) : new Date(start.getTime() + durationSeconds * 1000);
+
+        // Check if entry already exists (within 3s variance for same user)
+        const existing = await TimeEntryModel.findOne({
+          userId,
+          start: { $gte: new Date(start.getTime() - 3000), $lte: new Date(start.getTime() + 3000) },
+        });
+
+        if (existing) {
+          existing.durationSeconds = durationSeconds;
+          existing.breakSeconds = breakSeconds;
+          existing.end = end;
+          if (item.projectId) existing.projectId = item.projectId;
+          if (item.taskId) existing.taskId = item.taskId;
+          if (item.description) existing.description = item.description;
+          await existing.save();
+          syncedIds.push(item.id || existing._id.toString());
+        } else {
+          const created = await TimeEntryModel.create({
+            userId,
+            projectId: item.projectId || null,
+            taskId: item.taskId || null,
+            description: item.description || '',
+            start,
+            end,
+            durationSeconds,
+            breakSeconds,
+            isManualEdit: Boolean(item.isManualEdit),
+          });
+          syncedIds.push(item.id || created._id.toString());
+        }
+      }
+
+      res.status(200).json({
+        message: 'Time entries synced successfully',
+        syncedCount: syncedIds.length,
+        syncedIds,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

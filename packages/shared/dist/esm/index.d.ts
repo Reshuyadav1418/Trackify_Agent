@@ -202,6 +202,7 @@ export type RegisterDeviceInput = z.infer<typeof RegisterDeviceSchema>;
 export declare const CreatePolicySchema: z.ZodObject<{
     version: z.ZodNumber;
     screenshotIntervalMinutes: z.ZodDefault<z.ZodNumber>;
+    idleTimeoutMinutes: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     isBlurEnabled: z.ZodDefault<z.ZodBoolean>;
     retentionDays: z.ZodDefault<z.ZodNumber>;
     consentText: z.ZodString;
@@ -213,10 +214,12 @@ export declare const CreatePolicySchema: z.ZodObject<{
     retentionDays: number;
     consentText: string;
     isActive: boolean;
+    idleTimeoutMinutes?: number | undefined;
 }, {
     version: number;
     consentText: string;
     screenshotIntervalMinutes?: number | undefined;
+    idleTimeoutMinutes?: number | undefined;
     isBlurEnabled?: boolean | undefined;
     retentionDays?: number | undefined;
     isActive?: boolean | undefined;
@@ -246,12 +249,116 @@ export declare const StartTimerSchema: z.ZodObject<{
 export type StartTimerInput = z.infer<typeof StartTimerSchema>;
 export declare const StopTimerSchema: z.ZodObject<{
     timeEntryId: z.ZodOptional<z.ZodString>;
+    durationSeconds: z.ZodOptional<z.ZodNumber>;
+    breakSeconds: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     timeEntryId?: string | undefined;
+    durationSeconds?: number | undefined;
+    breakSeconds?: number | undefined;
 }, {
     timeEntryId?: string | undefined;
+    durationSeconds?: number | undefined;
+    breakSeconds?: number | undefined;
 }>;
 export type StopTimerInput = z.infer<typeof StopTimerSchema>;
+export declare const SyncTimeEntryItemSchema: z.ZodObject<{
+    id: z.ZodOptional<z.ZodString>;
+    projectId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    taskId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodString>;
+    start: z.ZodUnion<[z.ZodString, z.ZodDate]>;
+    end: z.ZodNullable<z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>>;
+    durationSeconds: z.ZodDefault<z.ZodNumber>;
+    breakSeconds: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+    isManualEdit: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+}, "strip", z.ZodTypeAny, {
+    durationSeconds: number;
+    breakSeconds: number;
+    start: string | Date;
+    isManualEdit: boolean;
+    isSync: boolean;
+    id?: string | undefined;
+    description?: string | undefined;
+    projectId?: string | null | undefined;
+    taskId?: string | null | undefined;
+    end?: string | Date | null | undefined;
+}, {
+    start: string | Date;
+    id?: string | undefined;
+    description?: string | undefined;
+    projectId?: string | null | undefined;
+    taskId?: string | null | undefined;
+    durationSeconds?: number | undefined;
+    breakSeconds?: number | undefined;
+    end?: string | Date | null | undefined;
+    isManualEdit?: boolean | undefined;
+    isSync?: boolean | undefined;
+}>;
+export type SyncTimeEntryItem = z.infer<typeof SyncTimeEntryItemSchema>;
+export declare const SyncTimeEntriesSchema: z.ZodObject<{
+    entries: z.ZodArray<z.ZodObject<{
+        id: z.ZodOptional<z.ZodString>;
+        projectId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+        taskId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+        description: z.ZodOptional<z.ZodString>;
+        start: z.ZodUnion<[z.ZodString, z.ZodDate]>;
+        end: z.ZodNullable<z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodDate]>>>;
+        durationSeconds: z.ZodDefault<z.ZodNumber>;
+        breakSeconds: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+        isManualEdit: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+        isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    }, "strip", z.ZodTypeAny, {
+        durationSeconds: number;
+        breakSeconds: number;
+        start: string | Date;
+        isManualEdit: boolean;
+        isSync: boolean;
+        id?: string | undefined;
+        description?: string | undefined;
+        projectId?: string | null | undefined;
+        taskId?: string | null | undefined;
+        end?: string | Date | null | undefined;
+    }, {
+        start: string | Date;
+        id?: string | undefined;
+        description?: string | undefined;
+        projectId?: string | null | undefined;
+        taskId?: string | null | undefined;
+        durationSeconds?: number | undefined;
+        breakSeconds?: number | undefined;
+        end?: string | Date | null | undefined;
+        isManualEdit?: boolean | undefined;
+        isSync?: boolean | undefined;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    entries: {
+        durationSeconds: number;
+        breakSeconds: number;
+        start: string | Date;
+        isManualEdit: boolean;
+        isSync: boolean;
+        id?: string | undefined;
+        description?: string | undefined;
+        projectId?: string | null | undefined;
+        taskId?: string | null | undefined;
+        end?: string | Date | null | undefined;
+    }[];
+}, {
+    entries: {
+        start: string | Date;
+        id?: string | undefined;
+        description?: string | undefined;
+        projectId?: string | null | undefined;
+        taskId?: string | null | undefined;
+        durationSeconds?: number | undefined;
+        breakSeconds?: number | undefined;
+        end?: string | Date | null | undefined;
+        isManualEdit?: boolean | undefined;
+        isSync?: boolean | undefined;
+    }[];
+}>;
+export type SyncTimeEntriesInput = z.infer<typeof SyncTimeEntriesSchema>;
 export declare const CreateManualEntrySchema: z.ZodObject<{
     taskId: z.ZodOptional<z.ZodString>;
     projectId: z.ZodOptional<z.ZodString>;
@@ -298,7 +405,9 @@ export declare const ActivitySampleSchema: z.ZodObject<{
     mouseCount: z.ZodNumber;
     isIdle: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     activeWindowTitle: z.ZodOptional<z.ZodString>;
+    isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
+    isSync: boolean;
     timestamp: string | Date;
     keyboardCount: number;
     mouseCount: number;
@@ -308,6 +417,7 @@ export declare const ActivitySampleSchema: z.ZodObject<{
     timestamp: string | Date;
     keyboardCount: number;
     mouseCount: number;
+    isSync?: boolean | undefined;
     isIdle?: boolean | undefined;
     activeWindowTitle?: string | undefined;
 }>;
@@ -319,7 +429,9 @@ export declare const BatchActivitySchema: z.ZodObject<{
         mouseCount: z.ZodNumber;
         isIdle: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
         activeWindowTitle: z.ZodOptional<z.ZodString>;
+        isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     }, "strip", z.ZodTypeAny, {
+        isSync: boolean;
         timestamp: string | Date;
         keyboardCount: number;
         mouseCount: number;
@@ -329,11 +441,13 @@ export declare const BatchActivitySchema: z.ZodObject<{
         timestamp: string | Date;
         keyboardCount: number;
         mouseCount: number;
+        isSync?: boolean | undefined;
         isIdle?: boolean | undefined;
         activeWindowTitle?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     samples: {
+        isSync: boolean;
         timestamp: string | Date;
         keyboardCount: number;
         mouseCount: number;
@@ -346,6 +460,7 @@ export declare const BatchActivitySchema: z.ZodObject<{
         timestamp: string | Date;
         keyboardCount: number;
         mouseCount: number;
+        isSync?: boolean | undefined;
         isIdle?: boolean | undefined;
         activeWindowTitle?: string | undefined;
     }[];

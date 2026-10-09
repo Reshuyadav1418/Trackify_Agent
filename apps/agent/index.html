@@ -849,7 +849,12 @@
       <!-- App Footer Utility Bar -->
       <footer class="app-footer">
         <div class="footer-left">
-          <span>Queue: <strong id="queue-count">0</strong></span>
+          <span id="sync-status-indicator" style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-size: 11px;">
+            <span id="sync-dot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e;"></span>
+            <span id="sync-label">Synced (isSync: true)</span>
+          </span>
+          <span style="color: #cbd5e1;">|</span>
+          <span style="font-size: 11px; color: #64748b;">Pending: <strong id="queue-count" style="color: #0f172a;">0</strong></span>
           <button id="help-btn" class="btn-mini">🛡 Permissions</button>
           <button id="snap-btn" class="btn-mini" title="Capture Screenshot">📸 Snap</button>
         </div>
@@ -862,7 +867,7 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- ── INACTIVITY WARNING MODAL (5s COUNTDOWN IN LIGHT THEME) ── -->
+    <!-- ── INACTIVITY WARNING MODAL (AUTO-BREAK COUNTDOWN) ── -->
     <!-- ══════════════════════════════════════════════════════════════ -->
     <div id="idle-warning-modal" class="modal-backdrop hidden">
       <div class="modal-box" style="text-align: center; border: 2px solid #f59e0b;">
@@ -870,20 +875,20 @@
         <h3 style="font-size: 16px; font-weight: 800; color: #b45309; margin-bottom: 4px;">
           Inactivity Warning
         </h3>
-        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
-          No mouse or keyboard input detected for 5 seconds.
+        <p id="idle-warning-subtitle" style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+          No mouse or keyboard activity detected.
         </p>
 
         <!-- Big countdown -->
         <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
           <p style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #d97706; margin-bottom: 4px;">
-            Auto-stopping timer and going idle in:
+            Auto-break applies in:
           </p>
           <div id="idle-countdown-sec" style="font-size: 40px; font-weight: 900; color: #b45309; font-family: monospace; line-height: 1;">
-            5s
+            30s
           </div>
           <p style="font-size: 11px; color: #78716c; margin-top: 6px;">
-            Move touchpad / mouse or press any key to continue working
+            Move mouse or press any key to continue active work
           </p>
         </div>
 
@@ -1020,7 +1025,7 @@
         };
 
         if (isAutoIdle) {
-          // Auto-Idle State:
+          // Auto-Break due to Idle
           startBtn.classList.add('hidden');
           activeButtonsGroup.classList.remove('hidden');
           breakBtn.classList.add('hidden');
@@ -1028,7 +1033,7 @@
           stopBtn.classList.remove('hidden');
 
           statusPillBanner.className = 'status-pill-banner tracking-idle';
-          indicatorText.innerText = '💤 IDLE PAUSED (TOUCH TO RESUME)';
+          indicatorText.innerText = '💤 AUTO-BREAK APPLIED (IDLE PAUSED)';
           indicatorText.style.color = '#dc2626';
           liveClockDigits.innerText = formatClock(currentBankedSec);
           renderMetrics(currentBankedSec);
@@ -1038,13 +1043,13 @@
           activeButtonsGroup.classList.remove('hidden');
 
           if (isOnBreak) {
-            // On Break State:
+            // Manual Break: No data recorded in break period
             breakBtn.classList.add('hidden');
             resumeBtn.classList.remove('hidden');
             stopBtn.classList.remove('hidden');
 
             statusPillBanner.className = 'status-pill-banner tracking-break';
-            indicatorText.innerText = '☕ ON BREAK (WORK PAUSED)';
+            indicatorText.innerText = '☕ ON BREAK (NO DATA RECORDED)';
             indicatorText.style.color = '#b45309';
 
             const bStart = breakStartTime || Date.now();
@@ -1229,15 +1234,24 @@
         setTimeout(() => { flushBtn.innerText = '🔄'; }, 600);
       });
 
-      // ── SCREENSHOT TOAST NOTIFIER (Silent: no alert popups) ──
+      // ── SCREENSHOT TOAST NOTIFIER ──
+      let toastHideTimeout = null;
       function showScreenshotToast(timeStr) {
-        // Silent capture: no alert messages or toast notifications displayed
+        if (screenshotToastTime) {
+          screenshotToastTime.innerText = timeStr || new Date().toLocaleTimeString();
+        }
+        if (screenshotToast) {
+          screenshotToast.classList.remove('hidden');
+          if (toastHideTimeout) clearTimeout(toastHideTimeout);
+          toastHideTimeout = setTimeout(() => {
+            screenshotToast.classList.add('hidden');
+          }, 3500);
+        }
       }
 
       if (window.trackifyApi.onScreenshotCaptured) {
         window.trackifyApi.onScreenshotCaptured((data) => {
-          // Logged silently without popup alerts
-          console.log('[Renderer] Screenshot captured silently at', data?.timestamp);
+          showScreenshotToast(data?.timestamp);
         });
       }
 
@@ -1326,10 +1340,40 @@
         }
       });
 
-      // 5s Countdown Inactivity Warning
+      // Sync status listener (isSync: true / false indicator)
+      function updateSyncStatusUI(sync) {
+        if (!sync) return;
+        const syncDot = document.getElementById('sync-dot');
+        const syncLabel = document.getElementById('sync-label');
+        if (queueCount) queueCount.innerText = sync.totalPending || 0;
+
+        if (!sync.isOnline) {
+          if (syncDot) syncDot.style.background = '#ef4444';
+          if (syncLabel) syncLabel.innerText = `Offline (Data Saved Locally • ${sync.totalPending} pending)`;
+        } else if (sync.isSyncing) {
+          if (syncDot) syncDot.style.background = '#f59e0b';
+          if (syncLabel) syncLabel.innerText = 'Syncing to Server...';
+        } else if (sync.totalPending > 0) {
+          if (syncDot) syncDot.style.background = '#f59e0b';
+          if (syncLabel) syncLabel.innerText = `Pending Sync (${sync.totalPending} items • isSync: false)`;
+        } else {
+          if (syncDot) syncDot.style.background = '#22c55e';
+          if (syncLabel) syncLabel.innerText = 'Synced (isSync: true)';
+        }
+      }
+
+      if (window.trackifyApi.onSyncStatusChange) {
+        window.trackifyApi.onSyncStatusChange(updateSyncStatusUI);
+      }
+
+      // Idle Countdown Inactivity Warning
       window.trackifyApi.onIdleWarning((data) => {
         if (idleCountdownSec) {
           idleCountdownSec.innerText = `${data.remainingSeconds}s`;
+        }
+        const subtitle = document.getElementById('idle-warning-subtitle');
+        if (subtitle && data.timeoutMinutes) {
+          subtitle.innerText = `No activity detected. Inactivity limit is ${data.timeoutMinutes} minutes.`;
         }
         if (idleWarningModal) {
           idleWarningModal.classList.remove('hidden');

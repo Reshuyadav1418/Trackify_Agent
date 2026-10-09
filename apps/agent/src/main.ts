@@ -4,7 +4,6 @@ import { autoUpdater } from 'electron-updater';
 import { apiClient } from './services/apiClient';
 import { localQueue } from './services/sqliteQueue';
 import { inputTracker } from './services/inputTracker';
-
 import { screenshotService } from './services/screenshotService';
 import { syncService } from './services/syncService';
 import { PlatformPermissions } from './platform/permissions';
@@ -15,11 +14,19 @@ let tray: Tray | null = null;
 // Tracking state & daily cumulative worked time
 let isTracking = false;
 let isOnBreak = false;
+let isAutoIdle = false;
+let idleWarningActive = false;
+
 let currentSegmentStartTime: number | null = null;
-let accumulatedWorkedSeconds = 0; // Total active work seconds accumulated today
+let accumulatedWorkedSeconds = 0; // Total active work seconds accumulated today (excluding breaks & idle)
 let lastTrackedDate = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
 let breakStartTime: number | null = null;
 let totalBreakSecondsToday = 0;
+let totalIdleSecondsToday = 0;
+
+let currentSessionId: string | null = null;
+let currentSessionStartIso: string | null = null;
+
 let activeProject: any = null;
 let activeTask: any = null;
 let activeUser: any = null;
@@ -67,11 +74,9 @@ function createWindow() {
 
 function createTray() {
   try {
-    // Generate a simple 16x16 colored tray icon
     const icon = nativeImage.createFromNamedImage('NSImageNameStatusAvailable', [16, 16]);
     tray = new Tray(icon);
     tray.setToolTip('Trackify Agent');
-
     updateTrayMenu();
   } catch (err) {
     console.warn('[Main] Tray creation fallback:', err);
@@ -83,7 +88,11 @@ function updateTrayMenu() {
 
   let statusLabel = '🔴 Tracking: OFF';
   if (isTracking) {
-    statusLabel = isOnBreak ? '🟡 Status: On Break (Paused)' : '🟢 Tracking: ON (Active)';
+    if (isOnBreak) {
+      statusLabel = isAutoIdle ? '💤 Status: Auto-Break (Idle)' : '☕ Status: On Break (Paused)';
+    } else {
+      statusLabel = '🟢 Tracking: ON (Active)';
+    }
   }
 
   const contextMenu = Menu.buildFromTemplate([
@@ -115,7 +124,7 @@ function updateTrayMenu() {
         } else if (isOnBreak) {
           handleResumeBreak();
         } else {
-          handlePauseBreak();
+          handlePauseBreak(false);
         }
       },
     },
@@ -139,14 +148,22 @@ function updateTrayMenu() {
   tray.setContextMenu(contextMenu);
 }
 
-function startTrackingSession(project: any, task: any) {
+// ══════════════════════════════════════════════════════════════════════
+// ── TRACKING SESSION MANAGEMENT ──
+// ══════════════════════════════════════════════════════════════════════
+
+function startTrackingSession(project: any, task: any, serverEntryId?: string) {
   checkNewDayReset();
 
   isTracking = true;
   isOnBreak = false;
   isAutoIdle = false;
   idleWarningActive = false;
+
   currentSegmentStartTime = Date.now();
+  currentSessionStartIso = new Date().toISOString();
+  currentSessionId = serverEntryId || `entry_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
   breakStartTime = null;
   activeProject = project;
   activeTask = task;
@@ -155,7 +172,7 @@ function startTrackingSession(project: any, task: any) {
   syncService.startSyncLoop();
   updateTrayMenu();
 
-  // Minute-level sample logger
+  // Minute-level activity sample logger
   if (minuteTimer) clearInterval(minuteTimer);
   minuteTimer = setInterval(() => {
     if (!isOnBreak) {
@@ -163,26 +180,43 @@ function startTrackingSession(project: any, task: any) {
     }
   }, 60000);
 
-  // Schedule screenshot timer (initial fast check in 25-35s, then recurring)
+  // Schedule screenshot timer
   scheduleNextScreenshot(true);
 
   notifyStatusChange();
 }
 
-function handlePauseBreak() {
+/**
+ * Pause / Break Logic:
+ * When user takes a break (or auto-break applies due to inactivity):
+ * - Pause the tracker
+ * - No data is recorded in the break period (no activity samples, no screenshots)
+ */
+function handlePauseBreak(isAuto: boolean = false) {
   if (!isTracking || isOnBreak) return;
 
-  // Save elapsed seconds in current active segment to accumulatedWorkedSeconds
+  const now = Date.now();
   if (currentSegmentStartTime) {
-    const elapsedSec = Math.floor((Date.now() - currentSegmentStartTime) / 1000);
-    accumulatedWorkedSeconds += Math.max(0, elapsedSec);
+    const elapsedSec = Math.max(0, Math.floor((now - currentSegmentStartTime) / 1000));
+    if (isAuto) {
+      // Inactivity timeout provided by server (e.g., 5 min)
+      const timeoutSec = (activePolicy?.idleTimeoutMinutes || 5) * 60;
+      const activeWorkSec = Math.max(0, elapsedSec - timeoutSec);
+      accumulatedWorkedSeconds += activeWorkSec;
+      totalIdleSecondsToday += timeoutSec;
+      console.log(`[Main] Auto-Break applied. Inactivity deducted: ${timeoutSec}s. Banked active work: ${accumulatedWorkedSeconds}s`);
+    } else {
+      accumulatedWorkedSeconds += elapsedSec;
+      console.log(`[Main] Manual break taken. Banked active work: ${accumulatedWorkedSeconds}s`);
+    }
     currentSegmentStartTime = null;
   }
 
   isOnBreak = true;
-  breakStartTime = Date.now();
+  isAutoIdle = isAuto;
+  breakStartTime = now;
 
-  // Pause input tracking and screenshots while employee is on break
+  // NO DATA RECORDED IN BREAK PERIOD: Stop input tracker, minute samples, and screenshots
   inputTracker.stop();
   if (minuteTimer) {
     clearInterval(minuteTimer);
@@ -193,21 +227,30 @@ function handlePauseBreak() {
     screenshotTimer = null;
   }
 
-  console.log(`[Main] Break started. Active work paused at: ${accumulatedWorkedSeconds}s`);
   updateTrayMenu();
   notifyStatusChange();
 }
 
+/**
+ * Resume Break Logic:
+ * When user resumes work after break:
+ * - Accumulate break seconds to totalBreakSecondsToday
+ * - Resume active work timer from accumulatedWorkedSeconds
+ * - Resume activity logging and screenshot scheduling
+ */
 function handleResumeBreak() {
   if (!isTracking || !isOnBreak) return;
 
   if (breakStartTime) {
-    totalBreakSecondsToday += Math.max(0, Math.floor((Date.now() - breakStartTime) / 1000));
+    const breakDuration = Math.max(0, Math.floor((Date.now() - breakStartTime) / 1000));
+    totalBreakSecondsToday += breakDuration;
     breakStartTime = null;
   }
 
   isOnBreak = false;
-  currentSegmentStartTime = Date.now(); // Start new active segment continuing from accumulatedWorkedSeconds
+  isAutoIdle = false;
+  idleWarningActive = false;
+  currentSegmentStartTime = Date.now();
 
   // Resume active activity collection and random screenshots
   inputTracker.start();
@@ -218,19 +261,68 @@ function handleResumeBreak() {
     }
   }, 60000);
 
-  scheduleNextScreenshot();
-  console.log(`[Main] Break ended. Resuming work directly from: ${accumulatedWorkedSeconds}s`);
+  scheduleNextScreenshot(false);
+  console.log(`[Main] Break ended. Resuming active work directly from: ${accumulatedWorkedSeconds}s`);
   updateTrayMenu();
   notifyStatusChange();
 }
 
-function handleStopTracking(resetDaily = false) {
+/**
+ * Stop Tracking Logic:
+ * Persists session data. If offline, stores locally with isSync: false.
+ */
+async function handleStopTracking(resetDaily = false) {
+  const now = Date.now();
+  let sessionActiveSeconds = accumulatedWorkedSeconds;
+
   if (isTracking && !isOnBreak && currentSegmentStartTime) {
-    const elapsedSec = Math.floor((Date.now() - currentSegmentStartTime) / 1000);
-    accumulatedWorkedSeconds += Math.max(0, elapsedSec);
+    const elapsedSec = Math.max(0, Math.floor((now - currentSegmentStartTime) / 1000));
+    accumulatedWorkedSeconds += elapsedSec;
+    sessionActiveSeconds = accumulatedWorkedSeconds;
   }
+
+  let sessionBreakSeconds = totalBreakSecondsToday;
   if (isOnBreak && breakStartTime) {
-    totalBreakSecondsToday += Math.max(0, Math.floor((Date.now() - breakStartTime) / 1000));
+    const breakSec = Math.max(0, Math.floor((now - breakStartTime) / 1000));
+    totalBreakSecondsToday += breakSec;
+    sessionBreakSeconds = totalBreakSecondsToday;
+  }
+
+  // Save the work session entry
+  if (isTracking && activeUser && currentSessionId) {
+    const startIso = currentSessionStartIso || new Date(now - sessionActiveSeconds * 1000).toISOString();
+    const endIso = new Date().toISOString();
+    const entryId = currentSessionId;
+    const pId = activeProject?._id || activeProject?.id || null;
+    const tId = activeTask?._id || activeTask?.id || null;
+
+    console.log(`[Main] Saving time entry: ${sessionActiveSeconds}s active, ${sessionBreakSeconds}s break...`);
+
+    // Try stopping server timer online
+    let synced = false;
+    try {
+      await apiClient.stopTimer(entryId, sessionActiveSeconds, sessionBreakSeconds);
+      synced = true;
+      console.log('[Main] Server timer stopped and confirmed successfully.');
+    } catch (err: any) {
+      console.warn('[Main] Server stopTimer offline / failed, queuing locally (isSync: false):', err?.message);
+    }
+
+    // Always record locally with appropriate isSync flag
+    localQueue.enqueueTimeEntry({
+      id: entryId,
+      userId: activeUser._id || activeUser.id,
+      projectId: pId,
+      taskId: tId,
+      description: activeTask?.title || activeProject?.name || '',
+      start: startIso,
+      end: endIso,
+      durationSeconds: sessionActiveSeconds,
+      breakSeconds: sessionBreakSeconds,
+      isSync: synced, // isSync: true if online call succeeded, false if offline
+      createdAt: new Date().toISOString(),
+      syncedAt: synced ? new Date().toISOString() : null,
+    });
   }
 
   if (resetDaily) {
@@ -245,6 +337,8 @@ function handleStopTracking(resetDaily = false) {
   idleWarningActive = false;
   currentSegmentStartTime = null;
   breakStartTime = null;
+  currentSessionId = null;
+  currentSessionStartIso = null;
 
   inputTracker.stop();
   if (minuteTimer) {
@@ -258,15 +352,19 @@ function handleStopTracking(resetDaily = false) {
 
   updateTrayMenu();
   notifyStatusChange();
+
+  // Trigger flush attempt in case network is available
+  syncService.flushAll().catch(() => {});
 }
 
 function logMinuteSample() {
-  if (!isTracking || !activeUser) return;
+  if (!isTracking || isOnBreak || !activeUser) return;
 
-  const metrics = inputTracker.getMinuteMetrics(10);
+  const timeoutMinutes = activePolicy?.idleTimeoutMinutes || 5;
+  const metrics = inputTracker.getMinuteMetrics(timeoutMinutes * 60);
   const minuteBucket = new Date().toISOString().slice(0, 16);
 
-  localQueue.enqueue({
+  localQueue.enqueueActivitySample({
     userId: activeUser._id || activeUser.id,
     minuteBucket,
     keyboardCount: metrics.keyboardCount,
@@ -274,9 +372,10 @@ function logMinuteSample() {
     isIdle: metrics.isIdle,
     timestamp: new Date().toISOString(),
     windowTitle: 'Trackify Agent Workspace',
+    isSync: false, // Flag maintained as isSync: false until synced
   });
 
-  syncService.flushQueue();
+  syncService.flushAll().catch(() => {});
   notifyStatusChange();
 }
 
@@ -298,7 +397,7 @@ function scheduleNextScreenshot(isInitial = false) {
         const isBlur = Boolean(activePolicy?.isBlurEnabled);
         await screenshotService.captureAndUpload(isBlur);
         const timeStr = new Date().toLocaleTimeString();
-        console.log(`[Main] ✅ Automatic screenshot captured & uploaded silently at ${timeStr}`);
+        console.log(`[Main] 📸 Screenshot captured at ${timeStr}`);
 
         if (mainWindow) {
           mainWindow.webContents.send('screenshot:captured', {
@@ -306,7 +405,7 @@ function scheduleNextScreenshot(isInitial = false) {
           });
         }
       } catch (err: any) {
-        console.error('[Main] Random screenshot upload error:', err?.message || err);
+        console.warn('[Main] Screenshot capture notice:', err?.message || err);
       }
       scheduleNextScreenshot(false);
     }
@@ -315,6 +414,7 @@ function scheduleNextScreenshot(isInitial = false) {
 
 function notifyStatusChange() {
   if (mainWindow) {
+    const counts = localQueue.getPendingCounts();
     mainWindow.webContents.send('timer:statusChange', {
       isTracking,
       isOnBreak,
@@ -327,115 +427,139 @@ function notifyStatusChange() {
       activeProject,
       activeTask,
       activePolicy,
-      pendingQueueCount: localQueue.getCount(),
+      pendingQueueCount: counts.totalPending,
+      pendingActivityCount: counts.pendingActivity,
+      pendingEntriesCount: counts.pendingEntries,
+      pendingScreenshotsCount: counts.pendingScreenshots,
+      isOnline: syncService.getStatus().isOnline,
     });
   }
 }
 
-// ── IDLE MONITORING (10-second auto-idle, 5-second warning countdown, auto-resume on touch) ──
-let idleWarningActive = false;
-let isAutoIdle = false;
-let totalIdleSecondsToday = 0;
-
-function handleAutoIdleStop(idleSec: number) {
-  // Save active work up to the moment user became inactive (idleSec seconds ago)
-  if (isTracking && !isOnBreak && currentSegmentStartTime) {
-    const elapsedSegment = Math.max(0, Math.floor((Date.now() - currentSegmentStartTime) / 1000));
-    const activeWorkSec = Math.max(0, elapsedSegment - idleSec);
-    accumulatedWorkedSeconds += activeWorkSec;
-    currentSegmentStartTime = null;
-  }
-
-  isTracking = false;
-  isOnBreak = false;
-
-  inputTracker.stop();
-  if (minuteTimer) {
-    clearInterval(minuteTimer);
-    minuteTimer = null;
-  }
-  if (screenshotTimer) {
-    clearTimeout(screenshotTimer);
-    screenshotTimer = null;
-  }
-
-  console.log(`[Main] Auto-idle entered (inactivity: ${idleSec}s). Timer paused. Active work banked: ${accumulatedWorkedSeconds}s, Total idle today: ${totalIdleSecondsToday}s`);
-  updateTrayMenu();
-  notifyStatusChange();
-}
-
-function autoResumeFromIdle() {
-  if (!isAutoIdle) return;
-  console.log(`[Main] User interaction detected. Auto-resuming timer silently. Banked work: ${accumulatedWorkedSeconds}s`);
-  isAutoIdle = false;
-  idleWarningActive = false;
-  startTrackingSession(activeProject, activeTask);
-}
+// ══════════════════════════════════════════════════════════════════════
+// ── IDLE MONITORING (Configurable timeout, Auto-Break applied) ──
+// ══════════════════════════════════════════════════════════════════════
 
 function setupPowerMonitor() {
-  // Poll system-wide idle every 1 second quietly without notifications or alert popups
+  // Poll system idle time every 1 second
   setInterval(() => {
+    const timeoutMinutes = activePolicy?.idleTimeoutMinutes || 5;
+    const idleTimeoutSec = timeoutMinutes * 60; // 5 minutes = 300s
+    const warningThresholdSec = Math.max(10, idleTimeoutSec - 30); // 30s countdown before auto-break
+
     if (isTracking && !isOnBreak) {
       const idleSec = powerMonitor.getSystemIdleTime();
-      const idleTimeout = 60; // 60s of complete inactivity before pausing tracking silently
 
-      if (idleSec >= idleTimeout) {
-        if (!isAutoIdle) {
-          isAutoIdle = true;
+      if (idleSec >= idleTimeoutSec) {
+        // ── 5 MINUTES INACTIVITY REACHED: Apply Auto-Break, Pause Work Timer ──
+        console.log(`[Main] User inactive for ${idleSec}s (threshold: ${idleTimeoutSec}s). Applying Auto-Break.`);
+        idleWarningActive = false;
+
+        if (mainWindow) {
+          mainWindow.setAlwaysOnTop(false);
+          mainWindow.webContents.send('idle:warningDismissed');
+        }
+
+        handlePauseBreak(true); // isAuto = true
+
+        if (Notification.isSupported()) {
+          new Notification({
+            title: '☕ Trackify Agent - Auto Break',
+            body: `Inactive for ${timeoutMinutes} minutes. Work timer paused automatically.`,
+            silent: false,
+          }).show();
+        }
+
+      } else if (idleSec >= warningThresholdSec) {
+        // ── 30-SECOND WARNING COUNTDOWN: Notify user on screen ──
+        idleWarningActive = true;
+        const remainingSeconds = Math.max(1, idleTimeoutSec - idleSec);
+
+        if (mainWindow) {
+          if (!mainWindow.isVisible()) {
+            mainWindow.show();
+          }
+          mainWindow.setAlwaysOnTop(true, 'screen-saver');
+          mainWindow.focus();
+
+          mainWindow.webContents.send('idle:warning', {
+            remainingSeconds,
+            idleSeconds: idleSec,
+            timeoutMinutes,
+          });
+        }
+      } else {
+        // Active work interaction
+        if (idleWarningActive) {
           idleWarningActive = false;
-          totalIdleSecondsToday += idleSec;
-          handleAutoIdleStop(idleSec);
-          notifyStatusChange();
+          if (mainWindow) {
+            mainWindow.setAlwaysOnTop(false);
+            mainWindow.webContents.send('idle:warningDismissed');
+          }
         }
       }
-    } else if (isAutoIdle) {
-      // ── CURRENTLY IN AUTO-IDLE STATE ──
+    } else if (isAutoIdle && isOnBreak) {
+      // User is currently paused on auto-break: check if they touched mouse or keyboard
       const idleSec = powerMonitor.getSystemIdleTime();
-
-      // If user touches touchpad, mouse, or keyboard anywhere in Windows:
       if (idleSec < 2) {
-        autoResumeFromIdle();
-      } else {
-        // User still away: increment idle count each second
-        totalIdleSecondsToday += 1;
-        notifyStatusChange();
+        if (mainWindow) {
+          mainWindow.webContents.send('idle:userReturned');
+        }
+      }
+    } else {
+      if (idleWarningActive) {
+        idleWarningActive = false;
+        if (mainWindow) {
+          mainWindow.webContents.send('idle:warningDismissed');
+        }
       }
     }
   }, 1000);
 
-  // Sleep & Lock screen handlers
+  // System sleep & lock listeners
   powerMonitor.on('suspend', () => {
     console.log('[PowerMonitor] System suspend/sleep detected. Pausing tracker...');
-    if (isTracking) handleStopTracking(false);
-  });
-
-  powerMonitor.on('resume', () => {
-    console.log('[PowerMonitor] System resume detected.');
+    if (isTracking && !isOnBreak) handlePauseBreak(true);
   });
 
   powerMonitor.on('lock-screen', () => {
     console.log('[PowerMonitor] Screen lock detected. Pausing tracker...');
-    if (isTracking) handleStopTracking(false);
-  });
-
-  powerMonitor.on('unlock-screen', () => {
-    console.log('[PowerMonitor] Screen unlock detected.');
+    if (isTracking && !isOnBreak) handlePauseBreak(true);
   });
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ── IPC HANDLERS ──
+// ══════════════════════════════════════════════════════════════════════
+
 function registerIpcHandlers() {
-  // Auth & Devices
+  // Sync status listener
+  syncService.onStatusChange((status) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('sync:statusChange', status);
+    }
+  });
+
+  // Auth & Login
   ipcMain.handle('auth:login', async (_event, { email, password }) => {
-    // Reset previous session for a clean login
-    handleStopTracking(true);
+    await handleStopTracking(true);
 
     const res = await apiClient.login(email, password);
     activeUser = res.user;
-
-    // Set today's date
     lastTrackedDate = new Date().toISOString().slice(0, 10);
 
-    // Try to restore today's already recorded work time for this user from server
+    // Sync active policy (with idleTimeoutMinutes)
+    try {
+      const policyRes = await apiClient.getActivePolicy();
+      activePolicy = policyRes.policy;
+      if (activePolicy?.version) {
+        try { await apiClient.acceptConsent(activePolicy.version); } catch (_) {}
+      }
+    } catch (_) {
+      activePolicy = { version: 1, screenshotIntervalMinutes: 5, idleTimeoutMinutes: 5, isBlurEnabled: false };
+    }
+
+    // Restore today's recorded work time from server
     try {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -446,18 +570,6 @@ function registerIpcHandlers() {
         console.log(`[Main] Restored ${sumSec} seconds of work recorded today for ${res.user.email}`);
       }
     } catch (_) {}
-
-    try {
-      const policyRes = await apiClient.getActivePolicy();
-      activePolicy = policyRes.policy;
-      if (activePolicy?.version) {
-        try {
-          await apiClient.acceptConsent(activePolicy.version);
-        } catch (_) {}
-      }
-    } catch (e) {
-      activePolicy = { version: 1, screenshotIntervalMinutes: 5, isBlurEnabled: false };
-    }
 
     notifyStatusChange();
     return res;
@@ -473,36 +585,40 @@ function registerIpcHandlers() {
 
   // Projects & Tasks
   ipcMain.handle('projects:get', async () => {
-    const res = await apiClient.getProjects();
-    return res.projects || [];
+    try {
+      const res = await apiClient.getProjects();
+      return res.projects || [];
+    } catch (_) {
+      return [];
+    }
   });
 
   ipcMain.handle('tasks:get', async () => {
-    const res = await apiClient.getTasks();
-    return res.tasks || [];
+    try {
+      const res = await apiClient.getTasks();
+      return res.tasks || [];
+    } catch (_) {
+      return [];
+    }
   });
 
   // Timer & Idle & Break
   ipcMain.handle('timer:start', async (_event, { projectId, taskId }) => {
+    let serverEntryId: string | undefined;
     try {
       if (projectId && taskId) {
         const res = await apiClient.startTimer(projectId, taskId);
-        startTrackingSession(res.timeEntry?.projectId, res.timeEntry?.taskId);
-        return res;
-      } else {
-        // Start local tracking
-        startTrackingSession(null, null);
-        return { success: true, message: 'Local tracking started' };
+        serverEntryId = res.timeEntry?._id;
       }
     } catch (err: any) {
-      console.warn('[Main] API timer start error, fallback to local tracking:', err?.message);
-      startTrackingSession(null, null);
-      return { success: true, message: 'Local tracking started' };
+      console.warn('[Main] Server timer start offline / error, starting local session:', err?.message);
     }
+    startTrackingSession(projectId, taskId, serverEntryId);
+    return { success: true };
   });
 
   ipcMain.handle('timer:pauseBreak', () => {
-    handlePauseBreak();
+    handlePauseBreak(false);
     return { success: true, isOnBreak: true };
   });
 
@@ -523,16 +639,12 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('timer:stop', async () => {
-    try {
-      await apiClient.stopTimer();
-    } catch (err: any) {
-      console.warn('[Main] Server stopTimer error (safe to ignore for local session):', err?.message);
-    }
-    handleStopTracking(false);
+    await handleStopTracking(false);
     return { success: true, message: 'Tracking stopped' };
   });
 
   ipcMain.handle('timer:status', () => {
+    const counts = localQueue.getPendingCounts();
     return {
       isTracking,
       isOnBreak,
@@ -546,8 +658,16 @@ function registerIpcHandlers() {
       activeTask,
       activeUser,
       activePolicy,
-      pendingQueueCount: localQueue.getCount(),
+      pendingQueueCount: counts.totalPending,
+      pendingActivityCount: counts.pendingActivity,
+      pendingEntriesCount: counts.pendingEntries,
+      pendingScreenshotsCount: counts.pendingScreenshots,
+      isOnline: syncService.getStatus().isOnline,
     };
+  });
+
+  ipcMain.handle('sync:status', () => {
+    return syncService.getStatus();
   });
 
   ipcMain.handle('idle:dismissWarning', () => {
@@ -567,18 +687,12 @@ function registerIpcHandlers() {
         mainWindow.webContents.send('idle:warningDismissed');
       }
     }
-    if (isAutoIdle) {
-      autoResumeFromIdle();
-    }
     return { success: true };
   });
 
   ipcMain.handle('idle:respond', (_event, action) => {
-    isAutoIdle = false;
-    idleWarningActive = false;
-
     if (action === 'keep' || action === 'discard') {
-      startTrackingSession(activeProject, activeTask);
+      handleResumeBreak();
     } else if (action === 'stay_stopped') {
       handleStopTracking(false);
     }
@@ -589,7 +703,7 @@ function registerIpcHandlers() {
   ipcMain.handle('queue:count', () => localQueue.getCount());
 
   ipcMain.handle('queue:flush', async () => {
-    return await syncService.flushQueue();
+    return await syncService.flushAll();
   });
 
   ipcMain.handle('screenshot:captureNow', async () => {
@@ -615,12 +729,9 @@ app.whenReady().then(() => {
   setupPowerMonitor();
   registerIpcHandlers();
 
-  // Check for updates
   try {
     autoUpdater.checkForUpdatesAndNotify();
-  } catch (e) {
-    // Ignore update check in dev mode
-  }
+  } catch (_) {}
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
