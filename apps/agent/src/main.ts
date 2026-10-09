@@ -49,7 +49,6 @@ function createWindow() {
     maxWidth: 580,
     resizable: true,
     autoHideMenuBar: true,
-    alwaysOnTop: true,
     title: 'Trackify Agent',
     icon: path.join(__dirname, '../icon.png'),
     webPreferences: {
@@ -58,9 +57,6 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-
-  mainWindow.setAlwaysOnTop(true, 'floating');
-  mainWindow.setVisibleOnAllWorkspaces(true);
 
   mainWindow.loadFile(path.join(__dirname, '../index.html'));
 
@@ -154,14 +150,6 @@ function startTrackingSession(project: any, task: any) {
   breakStartTime = null;
   activeProject = project;
   activeTask = task;
-
-  // Keep app window directly in front of any active website or software window
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    if (!mainWindow.isVisible()) mainWindow.show();
-    mainWindow.setAlwaysOnTop(true, 'floating');
-    mainWindow.focus();
-  }
 
   inputTracker.start();
   syncService.startSyncLoop();
@@ -317,7 +305,14 @@ function scheduleNextScreenshot(isInitial = false) {
             timestamp: timeStr,
           });
         }
-        // Native OS notification alert removed per user preference
+
+        if (Notification.isSupported()) {
+          new Notification({
+            title: '📸 Trackify Agent',
+            body: `Screenshot captured & uploaded (${timeStr})`,
+            silent: true,
+          }).show();
+        }
       } catch (err: any) {
         console.error('[Main] Random screenshot upload error:', err?.message || err);
       }
@@ -383,7 +378,7 @@ function autoResumeFromIdle() {
   isAutoIdle = false;
   idleWarningActive = false;
   if (mainWindow) {
-    mainWindow.setAlwaysOnTop(true, 'floating');
+    mainWindow.setAlwaysOnTop(false);
     mainWindow.webContents.send('idle:warningDismissed');
   }
   startTrackingSession(activeProject, activeTask);
@@ -394,22 +389,55 @@ function setupPowerMonitor() {
   setInterval(() => {
     if (isTracking && !isOnBreak) {
       const idleSec = powerMonitor.getSystemIdleTime();
-      // Standard idle threshold from policy or default 3 minutes (180s)
-      const idleThreshold = activePolicy?.idleThresholdSeconds || 180;
 
-      if (idleSec >= idleThreshold) {
-        if (!isAutoIdle) {
-          isAutoIdle = true;
-          idleWarningActive = false;
-          totalIdleSecondsToday += idleSec;
+      if (idleSec >= 10) {
+        // ── 10 SECONDS REACHED: Enter Auto-Idle, Pause Work Timer ──
+        isAutoIdle = true;
+        idleWarningActive = false;
+        totalIdleSecondsToday += idleSec;
 
-          // Keep window visible on top showing idle pause
-          if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            mainWindow.setAlwaysOnTop(true, 'floating');
+        if (mainWindow) {
+          mainWindow.setAlwaysOnTop(false);
+          mainWindow.webContents.send('idle:warningDismissed');
+        }
+
+        handleAutoIdleStop(idleSec);
+
+      } else if (idleSec >= 5) {
+        // ── 5 SECONDS WARNING (5s to 9s): Show Inactivity Countdown Warning ON SCREEN ──
+        idleWarningActive = true;
+        const remainingSeconds = Math.max(1, 10 - idleSec);
+
+        if (mainWindow) {
+          // Bring window directly in front on top of any active file or app so the user never misses it!
+          if (!mainWindow.isVisible()) {
+            mainWindow.show();
           }
+          mainWindow.setAlwaysOnTop(true, 'screen-saver');
+          mainWindow.focus();
 
-          handleAutoIdleStop(idleSec);
+          mainWindow.webContents.send('idle:warning', {
+            remainingSeconds,
+            idleSeconds: idleSec,
+          });
+        }
+
+        // Trigger native notification on first second of inactivity
+        if (remainingSeconds === 5 && Notification.isSupported()) {
+          new Notification({
+            title: '⚠️ Trackify Agent - Inactivity Warning',
+            body: 'No keyboard or mouse activity detected. Auto-pausing in 5 seconds...',
+            silent: false,
+          }).show();
+        }
+      } else {
+        // ── ACTIVE (idleSec < 5): Keyboard/Touchpad/Mouse interaction detected! ──
+        if (idleWarningActive) {
+          idleWarningActive = false;
+          if (mainWindow) {
+            mainWindow.setAlwaysOnTop(false);
+            mainWindow.webContents.send('idle:warningDismissed');
+          }
         }
       }
     } else if (isAutoIdle) {
@@ -423,6 +451,13 @@ function setupPowerMonitor() {
         // User still away: increment idle count each second
         totalIdleSecondsToday += 1;
         notifyStatusChange();
+      }
+    } else {
+      if (idleWarningActive) {
+        idleWarningActive = false;
+        if (mainWindow) {
+          mainWindow.webContents.send('idle:warningDismissed');
+        }
       }
     }
   }, 1000);
@@ -630,18 +665,6 @@ function registerIpcHandlers() {
   ipcMain.handle('shell:openExternal', async (_event, url: string) => {
     const { shell } = require('electron');
     return await shell.openExternal(url);
-  });
-
-  ipcMain.handle('window:toggleAlwaysOnTop', () => {
-    if (!mainWindow) return false;
-    const current = mainWindow.isAlwaysOnTop();
-    const next = !current;
-    mainWindow.setAlwaysOnTop(next, 'floating');
-    return next;
-  });
-
-  ipcMain.handle('window:isAlwaysOnTop', () => {
-    return mainWindow ? mainWindow.isAlwaysOnTop() : false;
   });
 }
 

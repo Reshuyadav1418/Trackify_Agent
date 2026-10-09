@@ -21,8 +21,6 @@ contextBridge.exposeInMainWorld('trackifyApi', {
   dismissIdleWarning: () => ipcRenderer.invoke('idle:dismissWarning'),
   userActivityDetected: () => ipcRenderer.invoke('idle:userActivity'),
   openExternalUrl: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
-  toggleAlwaysOnTop: () => ipcRenderer.invoke('window:toggleAlwaysOnTop'),
-  isAlwaysOnTop: () => ipcRenderer.invoke('window:isAlwaysOnTop'),
 
   // Queue & Sync & Screenshot
   getQueueCount: () => ipcRenderer.invoke('queue:count'),
