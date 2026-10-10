@@ -48,7 +48,7 @@ export const LoginPage: React.FC = () => {
 
       <div className="w-full max-w-md neu-raised-lg p-10 relative">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl neu-raised inline-flex items-center justify-center mb-4 text-neu-accent shadow-neu-raised">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-pink-500 text-white shadow-lg shadow-indigo-500/30 inline-flex items-center justify-center mb-4">
             <Sparkles size={28} />
           </div>
           <h1 className="text-2xl font-black text-neu-primary m-0 tracking-tight">
@@ -71,14 +71,14 @@ export const LoginPage: React.FC = () => {
               Email Address
             </label>
             <div className="relative flex items-center">
-              <Mail size={16} className="absolute left-3.5 text-neu-muted pointer-events-none" />
+              <Mail size={16} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@trackify.com"
                 required
-                className="input-custom w-full pl-10"
+                className="input-custom input-with-icon-left w-full pl-11 py-2.5"
               />
             </div>
           </div>
@@ -88,14 +88,14 @@ export const LoginPage: React.FC = () => {
               Password
             </label>
             <div className="relative flex items-center">
-              <Lock size={16} className="absolute left-3.5 text-neu-muted pointer-events-none" />
+              <Lock size={16} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
                 required
-                className="input-custom w-full pl-10"
+                className="input-custom input-with-icon-left w-full pl-11 py-2.5"
               />
             </div>
           </div>

@@ -28,13 +28,13 @@ export const Input: React.FC<InputProps> = ({
       )}
       <div className="relative flex items-center w-full">
         {leftIcon && (
-          <div className="absolute left-3.5 flex items-center pointer-events-none text-neu-muted">
+          <div className="absolute left-3.5 flex items-center pointer-events-none text-indigo-500 dark:text-indigo-400">
             {leftIcon}
           </div>
         )}
         <input
           id={inputId}
-          className={`input-custom w-full ${leftIcon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 text-sm ${
+          className={`input-custom w-full ${leftIcon ? 'input-with-icon-left pl-11' : 'pl-4'} pr-4 py-2.5 text-sm ${
             error ? 'ring-2 ring-rose-500' : ''
           } ${className}`}
           {...props}

@@ -312,13 +312,13 @@ export const SummaryPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Table Search */}
             <div className="relative flex items-center">
-              <Search size={13} className="absolute left-3 text-neu-muted pointer-events-none" />
+              <Search size={14} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search employees.."
+                placeholder="Search employees..."
                 value={searchEmployee}
                 onChange={(e) => setSearchEmployee(e.target.value)}
-                className="input-custom pl-8 py-1.5 text-xs w-44"
+                className="input-custom input-with-icon-left pl-11 py-1.5 text-xs w-48"
               />
             </div>
 

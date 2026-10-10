@@ -61,6 +61,21 @@ export const Layout: React.FC = () => {
     ];
   };
 
+  const navColorMap: Record<string, string> = {
+    'Summary': 'text-indigo-500',
+    'Timelines & Timesheets': 'text-violet-500',
+    'Screenshots Gallery': 'text-sky-500',
+    'Screenshot Review': 'text-sky-500',
+    'Edit Time Request': 'text-amber-500',
+    'Team Overview': 'text-emerald-500',
+    'Users & Teams': 'text-emerald-500',
+    'Activity Charts': 'text-fuchsia-500',
+    'Projects & Tasks': 'text-blue-500',
+    'Policy Settings': 'text-rose-500',
+    'Audit Logs': 'text-orange-500',
+    'Reports': 'text-fuchsia-500',
+  };
+
   const navLinks = getNavLinks().filter((link) =>
     link.label.toLowerCase().includes(sidebarSearch.toLowerCase())
   );
@@ -76,14 +91,14 @@ export const Layout: React.FC = () => {
         <div className="flex-1 flex flex-col neu-raised rounded-3xl p-3 overflow-hidden">
           {/* Brand Header */}
           <div className="p-3 mb-2 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl neu-raised-sm flex items-center justify-center text-neu-accent font-black text-base shadow-neu-raised-sm">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-pink-500 text-white flex items-center justify-center font-black text-base shadow-md shadow-indigo-500/30">
               T
             </div>
             <div>
-              <h1 className="text-lg font-extrabold m-0 tracking-tight text-neu-primary leading-tight">
+              <h1 className="text-lg font-black m-0 tracking-tight text-neu-primary leading-tight">
                 Trackify
               </h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neu-muted">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-md inline-block mt-0.5">
                 {user?.role || 'Workspace'}
               </span>
             </div>
@@ -92,13 +107,13 @@ export const Layout: React.FC = () => {
           {/* Search Menu */}
           <div className="px-1 py-2">
             <div className="relative flex items-center">
-              <Search size={14} className="absolute left-3 text-neu-muted pointer-events-none" />
+              <Search size={14} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Filter menu..."
                 value={sidebarSearch}
                 onChange={(e) => setSidebarSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
+                className="w-full input-with-icon-left pl-11 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
               />
             </div>
           </div>
@@ -107,6 +122,7 @@ export const Layout: React.FC = () => {
           <nav className="flex-1 px-1 py-2 flex flex-col gap-2 overflow-y-auto">
             {navLinks.map((link) => {
               const Icon = link.icon;
+              const iconColor = navColorMap[link.label] || 'text-indigo-500';
 
               return (
                 <NavLink
@@ -114,9 +130,9 @@ export const Layout: React.FC = () => {
                   to={link.path}
                   end={link.path === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 no-underline ${
+                    `group flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 no-underline ${
                       isActive
-                        ? 'neu-inset text-neu-accent shadow-neu-inset-sm font-extrabold'
+                        ? 'neu-inset text-indigo-600 dark:text-indigo-400 shadow-neu-inset-sm font-extrabold relative pl-3.5 border-l-4 border-indigo-500'
                         : 'text-neu-secondary hover:neu-raised-sm hover:text-neu-primary'
                     }`
                   }
@@ -124,8 +140,10 @@ export const Layout: React.FC = () => {
                   {({ isActive }) => (
                     <>
                       <div
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                          isActive ? 'text-neu-accent' : 'text-neu-muted'
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all ${
+                          isActive
+                            ? `${iconColor} bg-indigo-500/10 shadow-xs scale-105`
+                            : `${iconColor} opacity-80 group-hover:opacity-100 group-hover:scale-110`
                         }`}
                       >
                         <Icon size={17} />
@@ -142,7 +160,7 @@ export const Layout: React.FC = () => {
           <div className="p-2 pt-3 border-t border-white/10 dark:border-white/5">
             <div className="flex items-center justify-between px-2 py-1">
               <span className="text-[11px] font-bold text-neu-muted">Teamlogger v0.1</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" title="System Online" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" title="System Online" />
             </div>
           </div>
         </div>
@@ -160,12 +178,12 @@ export const Layout: React.FC = () => {
               <span className="text-neu-primary font-extrabold">{currentNav?.label || 'Overview'}</span>
             </div>
 
-            <div className="relative w-64 md:w-80">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neu-muted pointer-events-none" />
+            <div className="relative w-64 md:w-80 flex items-center">
+              <Search size={14} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search resources, users..."
-                className="w-full pl-10 pr-4 py-2 text-xs neu-inset-sm rounded-xl"
+                className="w-full input-with-icon-left pl-11 pr-4 py-2 text-xs neu-inset-sm rounded-xl"
               />
             </div>
           </div>
@@ -175,9 +193,9 @@ export const Layout: React.FC = () => {
             {/* Mobile App Button */}
             <button
               type="button"
-              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold"
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold hover:text-sky-600 transition-colors"
             >
-              <Smartphone size={14} className="text-neu-accent" />
+              <Smartphone size={14} className="text-sky-500" />
               <span>Mobile app</span>
             </button>
 
@@ -191,12 +209,12 @@ export const Layout: React.FC = () => {
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="flex items-center gap-2.5 p-1.5 pr-2.5 rounded-2xl neu-raised-sm cursor-pointer border-none bg-transparent"
               >
-                <div className="w-8 h-8 rounded-full neu-raised flex items-center justify-center font-bold text-neu-accent text-xs">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-indigo-500/25 ring-2 ring-indigo-400/20">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-bold m-0 text-neu-primary leading-tight">{user?.name || 'User'}</p>
-                  <p className="text-[10px] font-medium m-0 text-neu-muted truncate max-w-[100px]">{user?.role || 'Admin'}</p>
+                  <p className="text-[10px] font-semibold m-0 text-indigo-600 dark:text-indigo-400 truncate max-w-[100px]">{user?.role || 'Admin'}</p>
                 </div>
                 <ChevronDown size={14} className="text-neu-muted" />
               </button>

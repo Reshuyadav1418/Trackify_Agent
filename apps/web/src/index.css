@@ -203,22 +203,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--surface-gradient);
-  color: var(--accent) !important;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff !important;
   font-weight: 700;
   font-size: 0.875rem;
   padding: 0.65rem 1.25rem;
   border-radius: 0.85rem;
   border: none !important;
   cursor: pointer;
-  box-shadow: var(--shadow-raised-sm);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4), var(--shadow-raised-sm);
   transition: all 200ms ease;
 }
 
 .btn-primary:hover {
-  box-shadow: var(--shadow-raised);
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5), var(--shadow-raised);
   transform: translateY(-1px);
-  color: var(--accent-hover) !important;
+  color: #ffffff !important;
 }
 
 .btn-primary:active {
@@ -343,6 +344,26 @@ select {
   cursor: pointer;
 }
 
+/* Specific Input Icon Padding Overrides to prevent text & icon overlap */
+.input-with-icon-left,
+input.input-with-icon-left,
+.input-custom.input-with-icon-left {
+  padding-left: 2.75rem !important;
+}
+
+.input-with-icon-right,
+input.input-with-icon-right,
+.input-custom.input-with-icon-right {
+  padding-right: 2.75rem !important;
+}
+
+/* Reset for transparent nested selects inside inset container divs */
+select.bg-transparent {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
 /* Neumorphic Table Design */
 .table-custom-wrapper {
   background: var(--surface-gradient);
@@ -399,61 +420,131 @@ select {
   border-bottom-right-radius: 0.85rem;
 }
 
-/* Semantic Badges (Tinted Inset Pills) */
+/* Semantic Badges (Tinted Inset Pills with jewel tones) */
 .badge-indigo {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background-color: var(--bg);
-  box-shadow: var(--shadow-inset-sm);
-  color: var(--accent);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(99, 102, 241, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #4338CA;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  border: none !important;
+  border: 1px solid rgba(99, 102, 241, 0.22) !important;
+}
+
+html.dark .badge-indigo {
+  background: rgba(99, 102, 241, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(99, 102, 241, 0.15);
+  color: #A5B4FC;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
 }
 
 .badge-emerald {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background-color: var(--bg);
-  box-shadow: var(--shadow-inset-sm);
-  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(16, 185, 129, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #047857;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  border: none !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+
+html.dark .badge-emerald {
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(16, 185, 129, 0.15);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
 }
 
 .badge-amber {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background-color: var(--bg);
-  box-shadow: var(--shadow-inset-sm);
-  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(245, 158, 11, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #B45309;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  border: none !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .badge-amber {
+  background: rgba(245, 158, 11, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(245, 158, 11, 0.15);
+  color: #FCD34D;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 .badge-rose {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background-color: var(--bg);
-  box-shadow: var(--shadow-inset-sm);
-  color: #EF4444;
+  background: rgba(239, 68, 68, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(239, 68, 68, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #B91C1C;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  border: none !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+
+html.dark .badge-rose {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(239, 68, 68, 0.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.badge-violet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(139, 92, 246, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(139, 92, 246, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #6D28D9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+}
+
+html.dark .badge-violet {
+  background: rgba(139, 92, 246, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(139, 92, 246, 0.15);
+  color: #C4B5FD;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+}
+
+.badge-sky {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: inset 1px 1px 3px rgba(14, 165, 233, 0.2), inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+  color: #0369A1;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(14, 165, 233, 0.25) !important;
+}
+
+html.dark .badge-sky {
+  background: rgba(14, 165, 233, 0.2);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(14, 165, 233, 0.15);
+  color: #7DD3FC;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
 }
 
 /* KPI Cards (Soft Neumorphic Depth with Accent Details) */

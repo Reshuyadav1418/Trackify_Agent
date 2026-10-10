@@ -367,7 +367,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
           <div className="flex items-center gap-2.5">
             <h1 className="page-title">Screenshots & Timeline</h1>
             <span className="badge-indigo font-bold">
-              <Camera size={13} />
+              <Camera size={13} className="text-indigo-600 dark:text-indigo-400" />
               {screenshots.length} {screenshots.length === 1 ? 'Capture' : 'Captures'}
             </span>
           </div>
@@ -387,7 +387,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
             </label>
             {isManagerOrAdmin && !forcedUserId ? (
               <div className="flex items-center gap-2.5 px-3 py-2 neu-inset-sm rounded-xl">
-                <UserIcon size={16} className="text-neu-muted shrink-0" />
+                <UserIcon size={16} className="text-indigo-500 shrink-0" />
                 <select
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
@@ -403,7 +403,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
               </div>
             ) : (
               <div className="flex items-center gap-2.5 px-3 py-2.5 neu-inset-sm rounded-xl">
-                <UserIcon size={16} className="text-neu-accent shrink-0" />
+                <UserIcon size={16} className="text-indigo-500 shrink-0" />
                 <span className="text-xs font-bold text-neu-primary">
                   {user?.name || 'Reshu Yadav'}
                 </span>
@@ -420,7 +420,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
               <button
                 type="button"
                 onClick={handleToday}
-                className="text-[11px] font-bold text-neu-accent hover:underline cursor-pointer border-none bg-transparent"
+                className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer border-none bg-transparent"
               >
                 Today
               </button>
@@ -430,7 +430,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                 type="button"
                 onClick={handlePrevDay}
                 title="Previous Day"
-                className="btn-icon-circle w-9 h-9"
+                className="btn-icon-circle w-9 h-9 hover:text-indigo-600"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -444,7 +444,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                 type="button"
                 onClick={handleNextDay}
                 title="Next Day"
-                className="btn-icon-circle w-9 h-9"
+                className="btn-icon-circle w-9 h-9 hover:text-indigo-600"
               >
                 <ChevronRight size={16} />
               </button>
@@ -506,23 +506,32 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
 
       {/* ─── Cyan Status Ribbon & Permissions Banner ─── */}
       <div className="space-y-2">
-        <div className="inline-block neu-inset-sm text-neu-accent text-xs font-bold px-3.5 py-1.5 rounded-xl">
-          {displayRangeText}
+        <div className="inline-flex items-center gap-2 neu-inset-sm bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-3.5 py-1.5 rounded-xl border border-indigo-500/15">
+          <Calendar size={13} className="text-indigo-500" />
+          <span>{displayRangeText}</span>
         </div>
 
         <div className="text-xs font-semibold text-neu-muted flex flex-wrap items-center gap-4 pl-1">
-          <span>
-            Your permissions:&nbsp;
-            Delete Session:&nbsp;
-            <strong className={canDeleteSession ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+          <span className="inline-flex items-center gap-1.5">
+            Your permissions:
+            <span className="text-neu-secondary font-bold">Delete Session:</span>
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
+              canDeleteSession
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+            }`}>
               {canDeleteSession ? 'Allowed' : 'Denied'}
-            </strong>
+            </span>
           </span>
-          <span>
-            Delete Screenshot:&nbsp;
-            <strong className={canDeleteScreenshot ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-neu-secondary font-bold">Delete Screenshot:</span>
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
+              canDeleteScreenshot
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25'
+                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25'
+            }`}>
               {canDeleteScreenshot ? 'Allowed' : 'Denied'}
-            </strong>
+            </span>
           </span>
         </div>
       </div>
@@ -531,8 +540,8 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
       <div className="card-panel space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full neu-inset flex items-center justify-center text-neu-accent">
-              <ActivityIcon size={18} />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 neu-inset-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <ActivityIcon size={19} />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-neu-primary leading-tight m-0">Activity Timeline</h2>
@@ -543,18 +552,18 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
           {/* Legend and Toggle */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs">
             {/* Legend chips */}
-            <div className="flex flex-wrap items-center gap-3 font-semibold text-neu-secondary">
+            <div className="flex flex-wrap items-center gap-3 font-bold text-neu-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" /> Active
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" /> Active
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6] shadow-sm" /> Meeting
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]" /> Meeting
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" /> Idle
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" /> Manual
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" /> Manual
               </span>
             </div>
 
@@ -565,7 +574,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                 onClick={() => setViewMode('timeline')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
                   viewMode === 'timeline'
-                    ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                    ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
                     : 'bg-transparent text-neu-muted hover:text-neu-primary'
                 }`}
               >
@@ -577,7 +586,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                 onClick={() => setViewMode('table')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
                   viewMode === 'table'
-                    ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                    ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
                     : 'bg-transparent text-neu-muted hover:text-neu-primary'
                 }`}
               >
@@ -766,36 +775,36 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                   {/* Top badges row */}
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="badge-indigo font-bold">
-                      <Clock size={12} />
+                      <Clock size={12} className="text-indigo-600 dark:text-indigo-400" />
                       {formatSessionTime(sess.start, sess.end)}
                     </span>
-                    <span className="badge-indigo">
-                      <Calendar size={12} />
+                    <span className="badge-violet font-bold">
+                      <Calendar size={12} className="text-purple-600 dark:text-purple-400" />
                       {selectedDate}
                     </span>
                     <span className="badge-emerald font-bold">
-                      <Camera size={12} />
+                      <Camera size={12} className="text-emerald-600 dark:text-emerald-400" />
                       {sess.screenshots.length} {sess.screenshots.length === 1 ? 'Screenshot' : 'Screenshots'}
                     </span>
                   </div>
 
                   {/* Meta details row */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-neu-secondary font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      <UserIcon size={13} className="text-neu-muted" />
-                      <strong className="text-neu-primary">Employee:</strong> {sess.employee}
+                    <span className="inline-flex items-center gap-1.5">
+                      <UserIcon size={14} className="text-indigo-500" />
+                      <strong className="text-neu-primary font-bold">Employee:</strong> {sess.employee}
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Briefcase size={13} className="text-neu-muted" />
-                      <strong className="text-neu-primary">Project:</strong> {sess.project}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Briefcase size={14} className="text-blue-500" />
+                      <strong className="text-neu-primary font-bold">Project:</strong> {sess.project}
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <CheckSquare size={13} className="text-neu-muted" />
-                      <strong className="text-neu-primary">Task:</strong> {sess.task}
+                    <span className="inline-flex items-center gap-1.5">
+                      <CheckSquare size={14} className="text-emerald-500" />
+                      <strong className="text-neu-primary font-bold">Task:</strong> {sess.task}
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Globe size={13} className="text-neu-muted" />
-                      <strong className="text-neu-primary">IP:</strong> {sess.ipAddress}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Globe size={14} className="text-amber-500" />
+                      <strong className="text-neu-primary font-bold">IP:</strong> {sess.ipAddress}
                     </span>
                   </div>
 

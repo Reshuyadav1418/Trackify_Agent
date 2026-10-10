@@ -44,20 +44,20 @@ export const AuditLogsPage: React.FC = () => {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
-          <div className="relative w-56">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neu-muted pointer-events-none" />
+          <div className="relative w-64 flex items-center">
+            <Search size={14} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search action, actor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
+              className="w-full input-with-icon-left pl-11 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
             />
           </div>
 
           {/* Action Filter */}
           <div className="flex items-center gap-2 neu-inset-sm px-3 py-2 rounded-xl">
-            <Filter size={14} className="text-neu-muted" />
+            <Filter size={14} className="text-indigo-500 dark:text-indigo-400" />
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}

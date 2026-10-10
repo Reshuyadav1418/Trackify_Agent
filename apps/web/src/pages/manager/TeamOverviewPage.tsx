@@ -144,20 +144,20 @@ export const TeamOverviewPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Search filter */}
-            <div className="relative min-w-[220px]">
-              <Search size={14} className="text-neu-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="relative min-w-[240px] flex items-center">
+              <Search size={14} className="text-indigo-500 dark:text-indigo-400 absolute left-3.5 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search user, project, task..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-custom w-full pl-9 text-xs"
+                className="input-custom input-with-icon-left w-full pl-11 text-xs"
               />
             </div>
 
             {/* User dropdown filter */}
             <div className="flex items-center gap-2 neu-inset-sm px-3 py-2 rounded-xl">
-              <Filter size={14} className="text-neu-muted" />
+              <Filter size={14} className="text-indigo-500 dark:text-indigo-400" />
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
