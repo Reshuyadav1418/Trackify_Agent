@@ -135,6 +135,30 @@ function updateTrayMenu() {
         handleStopTracking(false);
       },
     },
+    {
+      label: '📸 Take Screenshot Now',
+      click: async () => {
+        try {
+          const isBlur = Boolean(activePolicy?.isBlurEnabled);
+          await screenshotService.captureAndUpload(isBlur);
+          const timeStr = new Date().toLocaleTimeString();
+          console.log(`[Tray] 📸 Screenshot captured on demand at ${timeStr}`);
+          if (mainWindow) {
+            mainWindow.webContents.send('screenshot:captured', {
+              timestamp: timeStr,
+            });
+          }
+          if (Notification.isSupported()) {
+            new Notification({
+              title: 'Trackify - Screenshot Captured',
+              body: `Captured desktop screen at ${timeStr}`,
+            }).show();
+          }
+        } catch (err: any) {
+          console.error('[Tray] Screenshot capture error:', err?.message || err);
+        }
+      },
+    },
     { type: 'separator' },
     {
       label: 'Quit',
