@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../context/ThemeContext';
 import {
@@ -16,12 +16,13 @@ import {
   ChevronDown,
   FileText,
   Shield,
+  ChevronRight,
 } from 'lucide-react';
-
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -64,208 +65,155 @@ export const Layout: React.FC = () => {
     link.label.toLowerCase().includes(sidebarSearch.toLowerCase())
   );
 
+  const currentNav = getNavLinks().find((l) =>
+    l.path === '/' ? location.pathname === '/' : location.pathname.startsWith(l.path)
+  );
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+    <div className="flex min-h-screen bg-neu-bg text-neu-primary">
       {/* Sidebar Desktop */}
-      <aside
-        style={{
-          width: '240px',
-          backgroundColor: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'fixed',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          zIndex: 40,
-        }}
-      >
-        {/* Brand Header */}
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-            T
+      <aside className="w-64 fixed top-0 bottom-0 left-0 z-40 flex flex-col p-4 bg-neu-bg">
+        <div className="flex-1 flex flex-col neu-raised rounded-3xl p-3 overflow-hidden">
+          {/* Brand Header */}
+          <div className="p-3 mb-2 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl neu-raised-sm flex items-center justify-center text-neu-accent font-black text-base shadow-neu-raised-sm">
+              T
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold m-0 tracking-tight text-neu-primary leading-tight">
+                Trackify
+              </h1>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neu-muted">
+                {user?.role || 'Workspace'}
+              </span>
+            </div>
           </div>
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
-            Trackify
-          </h1>
-        </div>
 
+          {/* Search Menu */}
+          <div className="px-1 py-2">
+            <div className="relative flex items-center">
+              <Search size={14} className="absolute left-3 text-neu-muted pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Filter menu..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
+              />
+            </div>
+          </div>
 
-        {/* Search Menu */}
-        <div style={{ padding: '0.75rem 1rem' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Search size={14} style={{ position: 'absolute', left: '0.75rem', color: 'var(--text-muted)' }} />
-            <input
-              type="text"
-              placeholder="Search menu..."
-              value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              style={{
-                width: '100%',
-                paddingLeft: '2.2rem',
-                fontSize: '0.8rem',
-                backgroundColor: 'var(--bg-input)',
-                borderRadius: '0.5rem',
-              }}
-            />
+          {/* Nav Links */}
+          <nav className="flex-1 px-1 py-2 flex flex-col gap-2 overflow-y-auto">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+
+              return (
+                <NavLink
+                  key={link.path + link.label}
+                  to={link.path}
+                  end={link.path === '/'}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 no-underline ${
+                      isActive
+                        ? 'neu-inset text-neu-accent shadow-neu-inset-sm font-extrabold'
+                        : 'text-neu-secondary hover:neu-raised-sm hover:text-neu-primary'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <div
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                          isActive ? 'text-neu-accent' : 'text-neu-muted'
+                        }`}
+                      >
+                        <Icon size={17} />
+                      </div>
+                      <span className="truncate">{link.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          {/* Sidebar Footer User Badge */}
+          <div className="p-2 pt-3 border-t border-white/10 dark:border-white/5">
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-[11px] font-bold text-neu-muted">Teamlogger v0.1</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" title="System Online" />
+            </div>
           </div>
         </div>
-
-        {/* Nav Links */}
-        <nav style={{ flex: 1, padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto' }}>
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-
-            return (
-              <NavLink
-                key={link.path + link.label}
-                to={link.path}
-                end={link.path === '/'}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: '0.6rem',
-                  fontSize: '0.85rem',
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                  backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                })}
-              >
-                <Icon size={18} />
-                <span>{link.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
       </aside>
 
-
       {/* Main Content & Top Bar Area */}
-      <div style={{ marginLeft: '240px', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div className="ml-64 flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header
-          style={{
-            height: '64px',
-            backgroundColor: 'var(--bg-topbar)',
-            borderBottom: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 1.5rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 30,
-          }}
-        >
-          {/* Top Search */}
-          <div style={{ position: 'relative', width: '320px' }}>
-            <Search size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input
-              type="text"
-              placeholder="Search help — How do I..."
-              style={{
-                width: '100%',
-                paddingLeft: '2.5rem',
-                fontSize: '0.825rem',
-                backgroundColor: 'var(--bg-input)',
-                borderRadius: '0.5rem',
-              }}
-            />
+        <header className="h-18 sticky top-0 z-30 flex items-center justify-between px-8 bg-neu-bg">
+          {/* Breadcrumbs & Search */}
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-neu-muted">
+              <span>Admin</span>
+              <ChevronRight size={13} />
+              <span className="text-neu-primary font-extrabold">{currentNav?.label || 'Overview'}</span>
+            </div>
+
+            <div className="relative w-64 md:w-80">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neu-muted pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search resources, users..."
+                className="w-full pl-10 pr-4 py-2 text-xs neu-inset-sm rounded-xl"
+              />
+            </div>
           </div>
 
           {/* Top Right Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            {/* Support Info */}
-            <div style={{ fontSize: '0.75rem', textAlign: 'right', color: 'var(--text-muted)' }}>
-              <p style={{ margin: 0, fontWeight: 500 }}>Support +91 70183 18974</p>
-              <p style={{ margin: 0, fontSize: '0.7rem' }}>Mon-Fri, 10AM to 6PM IST</p>
-            </div>
-
+          <div className="flex items-center gap-4">
             {/* Mobile App Button */}
             <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '0.5rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #3b82f6',
-                color: '#3b82f6',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              type="button"
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold"
             >
-              <Smartphone size={15} />
-              Mobile app
+              <Smartphone size={14} className="text-neu-accent" />
+              <span>Mobile app</span>
             </button>
 
             {/* Theme Toggle */}
             <ThemeToggle />
 
             {/* User Profile */}
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <button
+                type="button"
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
+                className="flex items-center gap-2.5 p-1.5 pr-2.5 rounded-2xl neu-raised-sm cursor-pointer border-none bg-transparent"
               >
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', fontSize: '0.9rem' }}>
+                <div className="w-8 h-8 rounded-full neu-raised flex items-center justify-center font-bold text-neu-accent text-xs">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <div>
-                  <p style={{ fontSize: '0.85rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>{user?.name || 'User'}</p>
-                  <p style={{ fontSize: '0.725rem', margin: 0, color: 'var(--text-muted)' }}>{user?.email}</p>
+                <div className="hidden md:block text-left">
+                  <p className="text-xs font-bold m-0 text-neu-primary leading-tight">{user?.name || 'User'}</p>
+                  <p className="text-[10px] font-medium m-0 text-neu-muted truncate max-w-[100px]">{user?.role || 'Admin'}</p>
                 </div>
-                <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+                <ChevronDown size={14} className="text-neu-muted" />
               </button>
 
               {userDropdownOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: '110%',
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '0.75rem',
-                    padding: '0.5rem',
-                    boxShadow: 'var(--shadow-lg)',
-                    minWidth: '160px',
-                    zIndex: 50,
-                  }}
-                >
+                <div className="neu-dropdown absolute right-0 top-full mt-2 w-48 z-50 p-2">
+                  <div className="px-3 py-2 border-b border-white/10 dark:border-white/5 mb-1">
+                    <p className="text-xs font-bold text-neu-primary m-0 truncate">{user?.name}</p>
+                    <p className="text-[10px] text-neu-muted m-0 truncate">{user?.email}</p>
+                  </div>
                   <button
                     onClick={handleLogout}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: '#ef4444',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      borderRadius: '0.5rem',
-                    }}
+                    type="button"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-500 rounded-xl hover:neu-inset-sm transition-all text-left"
                   >
-                    <LogOut size={16} /> Logout
+                    <LogOut size={14} />
+                    <span>Logout</span>
                   </button>
                 </div>
               )}
@@ -274,7 +222,7 @@ export const Layout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1, padding: '1.75rem', minWidth: 0 }}>
+        <main className="flex-1 px-8 py-6 min-w-0">
           <Outlet />
         </main>
       </div>

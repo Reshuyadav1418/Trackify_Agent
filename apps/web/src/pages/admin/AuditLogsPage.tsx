@@ -4,7 +4,7 @@ import { getAuditLogsApi } from '../../api/services';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { EmptyState } from '../../components/EmptyState';
-import { Search, Filter, User, Clock } from 'lucide-react';
+import { Search, Filter, User, Clock, ShieldAlert } from 'lucide-react';
 
 export const AuditLogsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,35 +34,34 @@ export const AuditLogsPage: React.FC = () => {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="space-y-6">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">System Audit Log Viewer</h1>
           <p className="page-subtitle">Immutable trail of screenshot views, manual time edits, and administrative actions.</p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
-          <div style={{ position: 'relative', width: '220px' }}>
-            <Search size={14} style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <div className="relative w-56">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neu-muted pointer-events-none" />
             <input
               type="text"
               placeholder="Search action, actor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-custom"
-              style={{ paddingLeft: '2.2rem', width: '100%' }}
+              className="w-full pl-9 pr-3 py-2 text-xs neu-inset-sm rounded-xl"
             />
           </div>
 
           {/* Action Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '0.75rem', padding: '0.35rem 0.75rem' }}>
-            <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+          <div className="flex items-center gap-2 neu-inset-sm px-3 py-2 rounded-xl">
+            <Filter size={14} className="text-neu-muted" />
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}
+              className="bg-transparent border-none p-0 text-xs text-neu-primary font-bold cursor-pointer outline-none"
             >
               <option value="all">All Actions</option>
               {uniqueActions.map((act) => (
@@ -76,11 +75,11 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Audit Log Table */}
-      <div className="card-panel" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="table-custom-wrapper">
         {filteredLogs.length === 0 ? (
           <EmptyState title="No Audit Logs Found" description="No matching system audit log entries found." />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="overflow-x-auto">
             <table className="table-custom">
               <thead>
                 <tr>
@@ -95,32 +94,41 @@ export const AuditLogsPage: React.FC = () => {
               <tbody>
                 {filteredLogs.map((log: any) => (
                   <tr key={log._id}>
-                    <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem' }}>
-                      <Clock size={13} style={{ display: 'inline', marginRight: '0.35rem' }} />
-                      {new Date(log.createdAt).toLocaleString(undefined, {
-                        dateStyle: 'short',
-                        timeStyle: 'medium',
-                      })}
+                    <td className="text-neu-muted whitespace-nowrap font-mono text-xs tabular-nums">
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={12} className="text-neu-muted" />
+                        <span>
+                          {new Date(log.createdAt).toLocaleString(undefined, {
+                            dateStyle: 'short',
+                            timeStyle: 'medium',
+                          })}
+                        </span>
+                      </div>
                     </td>
-                    <td style={{ fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <User size={15} style={{ color: 'var(--accent-primary)' }} />
+                    <td className="font-semibold text-neu-primary">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full neu-raised flex items-center justify-center text-neu-accent">
+                          <User size={14} />
+                        </div>
                         <div>
-                          <p style={{ margin: 0 }}>{log.actorId?.name || 'System'}</p>
-                          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>{log.actorId?.email || ''}</p>
+                          <p className="font-bold text-xs m-0 text-neu-primary">{log.actorId?.name || 'System'}</p>
+                          <p className="text-[10px] m-0 text-neu-muted">{log.actorId?.email || ''}</p>
                         </div>
                       </div>
                     </td>
                     <td>
                       <span className={log.action.includes('DELETE') ? 'badge-rose' : log.action.includes('VIEW') ? 'badge-indigo' : 'badge-amber'}>
+                        <ShieldAlert size={11} />
                         {log.action}
                       </span>
                     </td>
-                    <td>{log.targetEntity ? `${log.targetEntity} (${log.targetId || 'N/A'})` : '—'}</td>
-                    <td style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <td className="text-neu-secondary text-xs font-medium">
+                      {log.targetEntity ? `${log.targetEntity} (${log.targetId || 'N/A'})` : '—'}
+                    </td>
+                    <td className="font-mono text-xs text-neu-muted tabular-nums">
                       {log.ipAddress || '::1'}
                     </td>
-                    <td style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td className="font-mono text-[11px] text-neu-muted max-w-xs truncate">
                       {log.details ? JSON.stringify(log.details) : '{}'}
                     </td>
                   </tr>

@@ -16,6 +16,9 @@ import {
   Clock,
   User,
   TrendingUp,
+  Coffee,
+  Briefcase,
+  Users,
 } from 'lucide-react';
 
 export const SummaryPage: React.FC = () => {
@@ -86,16 +89,16 @@ export const SummaryPage: React.FC = () => {
       {/* ─── Header Title Bar ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Employee Summary</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
+          <h1 className="page-title">Employee Summary</h1>
+          <p className="page-subtitle">
             Review employee time, client billability, and productivity from one unified report.
           </p>
         </div>
 
         {/* Auto Refresh Select */}
-        <div className="flex items-center gap-2 bg-[var(--bg-card)] px-3.5 py-2 rounded-xl border border-[var(--border-color)] text-xs shadow-xs self-start sm:self-auto">
-          <span className="text-[var(--text-muted)] font-medium">Auto Refresh:</span>
-          <select className="bg-transparent border-0 outline-none font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer">
+        <div className="flex items-center gap-2 neu-inset-sm px-3.5 py-2 rounded-xl text-xs self-start sm:self-auto">
+          <span className="text-neu-muted font-bold text-[11px] uppercase tracking-wider">Auto Refresh:</span>
+          <select className="bg-transparent border-0 outline-none font-bold text-neu-accent cursor-pointer">
             <option value="off">Off</option>
             <option value="30s">30s</option>
             <option value="1m">1m</option>
@@ -104,10 +107,10 @@ export const SummaryPage: React.FC = () => {
       </div>
 
       {/* ─── Timer Action Control Bar ─── */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="card-panel flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-[280px]">
-          <div className={`p-2.5 rounded-xl ${activeEntry ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-            <Clock className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl neu-inset flex items-center justify-center text-neu-accent">
+            <Clock size={20} />
           </div>
           <input
             type="text"
@@ -115,7 +118,7 @@ export const SummaryPage: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={Boolean(activeEntry)}
-            className="flex-1 text-sm bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
+            className="flex-1 input-custom"
           />
         </div>
 
@@ -124,18 +127,18 @@ export const SummaryPage: React.FC = () => {
             <button
               onClick={() => stopMutation.mutate(activeEntry._id)}
               disabled={stopMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              className="btn-danger flex items-center gap-2 text-xs py-2 px-5 font-bold"
             >
-              <Square className="w-4 h-4 fill-white" />
+              <Square size={14} className="fill-current" />
               {stopMutation.isPending ? 'Stopping...' : 'Stop Timer'}
             </button>
           ) : (
             <button
               onClick={() => startMutation.mutate({ description })}
               disabled={startMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              className="btn-primary text-emerald-600 dark:text-emerald-400 flex items-center gap-2 text-xs py-2 px-5 font-bold"
             >
-              <Play className="w-4 h-4 fill-white" />
+              <Play size={14} className="fill-current" />
               {startMutation.isPending ? 'Starting...' : 'Start Timer'}
             </button>
           )}
@@ -143,25 +146,25 @@ export const SummaryPage: React.FC = () => {
       </div>
 
       {timerError && (
-        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="neu-inset-sm text-rose-500 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" />
           <span>{timerError}</span>
         </div>
       )}
 
       {/* ─── Report Filter Controls Bar ─── */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-xs space-y-4">
+      <div className="card-panel space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 items-end text-xs">
           <div>
-            <label className="block font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[11px]">Team</label>
-            <select className="w-full px-3 py-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] font-medium cursor-pointer shadow-xs">
+            <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Team</label>
+            <select className="w-full input-custom py-2">
               <option>All Employees</option>
             </select>
           </div>
 
           <div>
-            <label className="block font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[11px]">Range</label>
-            <select className="w-full px-3 py-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] font-medium cursor-pointer shadow-xs">
+            <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Range</label>
+            <select className="w-full input-custom py-2">
               <option>Custom</option>
               <option>Today</option>
               <option>This Week</option>
@@ -169,18 +172,18 @@ export const SummaryPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[11px]">Start Date</label>
-            <input type="date" defaultValue="2026-09-30" className="w-full px-3 py-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] font-medium cursor-pointer shadow-xs" />
+            <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Start Date</label>
+            <input type="date" defaultValue="2026-09-30" className="w-full input-custom py-2" />
           </div>
 
           <div>
-            <label className="block font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[11px]">End Date</label>
-            <input type="date" defaultValue="2026-09-30" className="w-full px-3 py-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] font-medium cursor-pointer shadow-xs" />
+            <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">End Date</label>
+            <input type="date" defaultValue="2026-09-30" className="w-full input-custom py-2" />
           </div>
 
           <div>
-            <label className="block font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[11px]">Day Reset</label>
-            <select className="w-full px-3 py-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] font-medium cursor-pointer shadow-xs">
+            <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Day Reset</label>
+            <select className="w-full input-custom py-2">
               <option>04:00 to 03:59 Next day</option>
             </select>
           </div>
@@ -188,90 +191,120 @@ export const SummaryPage: React.FC = () => {
           <div>
             <button
               onClick={() => refetch()}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
+              className="w-full btn-primary flex items-center justify-center gap-2 py-2"
             >
-              <RotateCw className="w-3.5 h-3.5" />
-              Refresh
+              <RotateCw size={14} />
+              <span>Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* ─── Sub Tabs Pill Row ─── */}
-      <div className="flex items-center gap-2">
+      <div className="inline-flex p-1.5 neu-inset rounded-2xl gap-2">
         <button
           onClick={() => setActiveTab('summary')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'summary'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          <User className="w-3.5 h-3.5" />
-          Employee Summary
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'summary' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+          <User size={14} />
+          <span>Employee Summary</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'summary' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
             1
           </span>
         </button>
         <button
           onClick={() => setActiveTab('productivity')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'productivity'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          <TrendingUp className="w-3.5 h-3.5" />
-          Productivity Summary
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'productivity' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}>
+          <TrendingUp size={14} />
+          <span>Productivity Summary</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'productivity' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
             0/1
           </span>
         </button>
       </div>
 
-      {/* ─── Colorful Summary KPI Cards Grid ─── */}
+      {/* ─── Soft Neumorphic Summary KPI Cards Grid ─── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-4 rounded-2xl shadow-sm space-y-1">
-          <h2 className="text-xl font-extrabold">{formatHours(totalDurationSeconds)}</h2>
-          <p className="text-[11px] font-semibold text-indigo-100 uppercase tracking-wider">Time Worked</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Time Worked</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-neu-accent">
+              <Clock size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-neu-accent tabular-nums m-0">{formatHours(totalDurationSeconds)}</h2>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 rounded-2xl shadow-sm space-y-1">
-          <h2 className="text-xl font-extrabold">{formatHours(totalDurationSeconds)}</h2>
-          <p className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider">Timer (Active)</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Timer (Active)</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-emerald-500">
+              <Play size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums m-0">{formatHours(totalDurationSeconds)}</h2>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-2xl shadow-sm space-y-1">
-          <h2 className="text-xl font-extrabold">{formatHours(manualEntrySeconds)}</h2>
-          <p className="text-[11px] font-semibold text-amber-100 uppercase tracking-wider">Manual Entry</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Manual Entry</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-amber-500">
+              <Briefcase size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-amber-600 dark:text-amber-400 tabular-nums m-0">{formatHours(manualEntrySeconds)}</h2>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-4 rounded-2xl shadow-sm space-y-1">
-          <h2 className="text-xl font-extrabold">0h</h2>
-          <p className="text-[11px] font-semibold text-teal-100 uppercase tracking-wider">Meeting Hours</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Meeting Hours</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-teal-500">
+              <Users size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-teal-600 dark:text-teal-400 tabular-nums m-0">0h</h2>
         </div>
 
-        <div className="bg-gradient-to-br from-rose-500 to-rose-600 text-white p-4 rounded-2xl shadow-sm space-y-1">
-          <h2 className="text-xl font-extrabold">{formatHours(idleTimeSeconds)}</h2>
-          <p className="text-[11px] font-semibold text-rose-100 uppercase tracking-wider">Idle Time</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Idle Time</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-rose-500">
+              <Coffee size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums m-0">{formatHours(idleTimeSeconds)}</h2>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] p-4 rounded-2xl shadow-xs space-y-1">
-          <h2 className="text-xl font-extrabold text-[var(--text-primary)]">1</h2>
-          <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Employees Worked</p>
+        <div className="card-panel !p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Employees</span>
+            <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-neu-primary">
+              <User size={14} />
+            </div>
+          </div>
+          <h2 className="text-xl font-black text-neu-primary tabular-nums m-0">1</h2>
         </div>
       </div>
 
       {/* ─── Main Employee Summary Table Card ─── */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-xs space-y-4">
+      <div className="space-y-3">
         {/* Table Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-color)]/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-500" />
+            <h3 className="text-base font-extrabold text-neu-primary flex items-center gap-2 m-0">
+              <User size={16} className="text-neu-accent" />
               Employee Summary
             </h3>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+            <p className="text-xs text-neu-muted mt-0.5 font-medium m-0">
               1 employee with recorded activity &bull; Updated just now
             </p>
           </div>
@@ -279,25 +312,25 @@ export const SummaryPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Table Search */}
             <div className="relative flex items-center">
-              <Search className="w-3.5 h-3.5 absolute left-3 text-slate-400 pointer-events-none" />
+              <Search size={13} className="absolute left-3 text-neu-muted pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search employees.."
                 value={searchEmployee}
                 onChange={(e) => setSearchEmployee(e.target.value)}
-                className="pl-9 pr-3 py-1.5 text-xs bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-48 transition-all"
+                className="input-custom pl-8 py-1.5 text-xs w-44"
               />
             </div>
 
             {/* HH:MM / Decimal Toggle */}
-            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-[var(--border-color)] text-xs">
+            <div className="inline-flex p-1 neu-inset-sm rounded-xl text-xs gap-1">
               <button
                 type="button"
                 onClick={() => setFormatType('hhmm')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer border-none ${
                   formatType === 'hhmm'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                    : 'bg-transparent text-neu-muted hover:text-neu-primary'
                 }`}
               >
                 HH:MM
@@ -305,10 +338,10 @@ export const SummaryPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormatType('decimal')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer border-none ${
                   formatType === 'decimal'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                    : 'bg-transparent text-neu-muted hover:text-neu-primary'
                 }`}
               >
                 Decimal
@@ -317,10 +350,10 @@ export const SummaryPage: React.FC = () => {
 
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold cursor-pointer shadow-xs transition-colors"
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold"
             >
-              <Columns className="w-3.5 h-3.5 text-slate-400" />
-              Columns
+              <Columns size={13} className="text-neu-muted" />
+              <span>Columns</span>
             </button>
 
             <button
@@ -348,172 +381,121 @@ export const SummaryPage: React.FC = () => {
                 link.click();
                 link.remove();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold cursor-pointer shadow-xs transition-colors"
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold"
             >
-              <Download className="w-3.5 h-3.5 text-slate-400" />
-              Export
+              <Download size={13} className="text-neu-muted" />
+              <span>Export</span>
             </button>
           </div>
         </div>
 
         {/* Table View */}
-        <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
-          <table className="w-full min-w-[1020px] border-collapse text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50/90 dark:bg-slate-900/60 border-b border-[var(--border-color)] text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <th scope="col" className="px-5 py-3.5 whitespace-nowrap min-w-[220px]">
-                  EMPLOYEE
-                </th>
-                <th scope="col" className="px-5 py-3.5 whitespace-nowrap min-w-[180px]">
-                  ACTIVITY SPAN
-                </th>
-                <th scope="col" className="px-4 py-3.5 whitespace-nowrap text-center min-w-[125px]">
-                  <span className="inline-flex items-center gap-1">
-                    TIME WORKED
-                    <span className="text-indigo-600 dark:text-indigo-400">▴</span>
-                  </span>
-                </th>
-                <th scope="col" className="px-4 py-3.5 whitespace-nowrap text-center min-w-[110px]">
-                  TIMER
-                </th>
-                <th scope="col" className="px-4 py-3.5 whitespace-nowrap text-center min-w-[130px]">
-                  MEETING HOURS
-                </th>
-                <th scope="col" className="px-4 py-3.5 whitespace-nowrap text-center min-w-[130px]">
-                  MANUAL ENTRY
-                </th>
-                <th scope="col" className="px-5 py-3.5 whitespace-nowrap min-w-[180px]">
-                  % ACTIVE MINUTES
-                </th>
-                <th scope="col" className="px-5 py-3.5 whitespace-nowrap min-w-[180px]">
-                  % ACTIVE SEC
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-color)]">
-              <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                {/* Employee Name & Sublinks */}
-                <td className="px-5 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 border border-indigo-200/50 dark:border-indigo-800/40">
-                      {(user?.name || 'User').charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-bold text-[var(--text-primary)] leading-tight">
-                        {user?.name || 'User Account'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <a
-                          href="/screenshots"
-                          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline inline-flex items-center gap-1"
-                        >
-                          Screenshots
-                        </a>
-                        <span className="text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-[var(--border-color)] tracking-wider">
-                          AUTO
-                        </span>
+        <div className="table-custom-wrapper">
+          <div className="overflow-x-auto">
+            <table className="table-custom">
+              <thead>
+                <tr>
+                  <th>EMPLOYEE</th>
+                  <th>ACTIVITY SPAN</th>
+                  <th className="text-center">TIME WORKED</th>
+                  <th className="text-center">TIMER</th>
+                  <th className="text-center">MEETING HOURS</th>
+                  <th className="text-center">MANUAL ENTRY</th>
+                  <th>% ACTIVE MINUTES</th>
+                  <th>% ACTIVE SEC</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {/* Employee Name & Sublinks */}
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full neu-raised flex items-center justify-center text-xs font-bold text-neu-accent">
+                        {(user?.name || 'User').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-neu-primary leading-tight m-0">
+                          {user?.name || 'User Account'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <a
+                            href="/screenshots"
+                            className="text-[11px] font-bold text-neu-accent hover:underline no-underline"
+                          >
+                            Screenshots
+                          </a>
+                          <span className="badge-indigo text-[10px] py-0 px-1.5">
+                            AUTO
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Activity Span */}
-                <td className="px-5 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-                      <span className="font-mono text-xs">09:14</span>
-                      <span className="text-slate-400 font-normal">➔</span>
-                      <span className="font-mono text-xs">16:32</span>
+                  {/* Activity Span */}
+                  <td>
+                    <div>
+                      <div className="flex items-center gap-1.5 font-semibold text-neu-primary">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-mono text-xs tabular-nums">09:14</span>
+                        <span className="text-neu-muted font-normal">➔</span>
+                        <span className="font-mono text-xs tabular-nums">16:32</span>
+                      </div>
+                      <p className="text-[11px] text-neu-muted mt-1 m-0">Updated 3 min ago</p>
                     </div>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-1">Updated 3 min ago</p>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Time Worked */}
-                <td className="px-4 py-4 whitespace-nowrap text-center">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 shadow-2xs">
-                    {formatClockTime(totalDurationSeconds)}
-                  </span>
-                </td>
+                  {/* Time Worked */}
+                  <td className="text-center">
+                    <span className="badge-emerald font-mono font-bold text-xs tabular-nums">
+                      {formatClockTime(totalDurationSeconds)}
+                    </span>
+                  </td>
 
-                {/* Timer */}
-                <td className="px-4 py-4 whitespace-nowrap text-center">
-                  <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                    {formatClockTime(totalDurationSeconds)}
-                  </span>
-                </td>
+                  {/* Timer */}
+                  <td className="text-center">
+                    <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      {formatClockTime(totalDurationSeconds)}
+                    </span>
+                  </td>
 
-                {/* Meeting Hours */}
-                <td className="px-4 py-4 whitespace-nowrap text-center">
-                  <span className="font-mono text-xs text-[var(--text-muted)]">
-                    00:00
-                  </span>
-                </td>
+                  {/* Meeting Hours */}
+                  <td className="text-center">
+                    <span className="font-mono text-xs text-neu-muted tabular-nums">
+                      00:00
+                    </span>
+                  </td>
 
-                {/* Manual Entry */}
-                <td className="px-4 py-4 whitespace-nowrap text-center">
-                  <span className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
-                    {formatClockTime(manualEntrySeconds)}
-                  </span>
-                </td>
+                  {/* Manual Entry */}
+                  <td className="text-center">
+                    <span className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400 tabular-nums">
+                      {formatClockTime(manualEntrySeconds)}
+                    </span>
+                  </td>
 
-                {/* % Active Minutes */}
-                <td className="px-5 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-xs text-[var(--text-primary)] w-9 shrink-0">95%</span>
-                    <div className="w-24 h-2 bg-slate-100 dark:bg-slate-700/60 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700">
-                      <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: '95%' }} />
+                  {/* % Active Minutes */}
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">95%</span>
+                      <div className="w-24 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '95%' }} />
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                {/* % Active Sec */}
-                <td className="px-5 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-xs text-[var(--text-primary)] w-9 shrink-0">42%</span>
-                    <div className="w-24 h-2 bg-slate-100 dark:bg-slate-700/60 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700">
-                      <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: '42%' }} />
+                  {/* % Active Sec */}
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">42%</span>
+                      <div className="w-24 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '42%' }} />
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-
-            {/* Table Footer / Summary Row */}
-            <tfoot>
-              <tr className="bg-slate-50/90 dark:bg-slate-900/80 font-bold border-t-2 border-[var(--border-color)] text-xs text-[var(--text-primary)]">
-                <td className="px-5 py-3.5 whitespace-nowrap">
-                  <span className="font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-200">
-                    TOTAL (1 employees)
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 whitespace-nowrap text-[var(--text-muted)]">-</td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-center">
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {formatClockTime(totalDurationSeconds)}
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-center">
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {formatClockTime(totalDurationSeconds)}
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-center text-[var(--text-muted)] font-mono">
-                  00:00
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-center font-mono font-bold text-amber-600 dark:text-amber-400">
-                  {formatClockTime(manualEntrySeconds)}
-                </td>
-                <td className="px-5 py-3.5 whitespace-nowrap font-mono font-bold text-[var(--text-primary)]">
-                  95%
-                </td>
-                <td className="px-5 py-3.5 whitespace-nowrap font-mono font-bold text-[var(--text-primary)]">
-                  42%
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -521,4 +503,3 @@ export const SummaryPage: React.FC = () => {
 };
 
 export default SummaryPage;
-

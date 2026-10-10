@@ -4,8 +4,7 @@ import { getTimesheetReportApi, getActivityReportApi, getProjectsReportApi, expo
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { EmptyState } from '../../components/EmptyState';
-import { Download, BarChart3, Clock, FolderKanban } from 'lucide-react';
-
+import { Download, BarChart3, Clock, FolderKanban, Calendar } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'timesheet' | 'activity' | 'projects'>('timesheet');
@@ -69,66 +68,72 @@ export const ReportsPage: React.FC = () => {
         <button
           onClick={handleExportCsv}
           disabled={isExporting}
-          className="btn-primary !bg-emerald-600 hover:!bg-emerald-500 disabled:opacity-50"
+          className="btn-primary text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2"
         >
-          <Download className="w-4 h-4" />
+          <Download size={16} />
           {isExporting ? 'Exporting...' : 'Export Report (CSV)'}
         </button>
       </div>
 
       {/* Date Filter Toolbar */}
       <div className="card-panel flex flex-wrap items-center justify-between gap-4">
-        <div className="flex border-b sm:border-b-0 border-[var(--border-color)] gap-2">
+        {/* Neumorphic Segmented Report Tabs */}
+        <div className="inline-flex p-1.5 neu-inset rounded-2xl gap-2">
           <button
             onClick={() => setActiveTab('timesheet')}
-            className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
               activeTab === 'timesheet'
-                ? 'bg-[var(--accent-primary)] text-white'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-subtle)]'
+                ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                : 'bg-transparent text-neu-muted hover:text-neu-primary'
             }`}
           >
-            <Clock className="w-4 h-4" /> Timesheet Report
+            <Clock size={14} />
+            <span>Timesheet</span>
           </button>
           <button
             onClick={() => setActiveTab('activity')}
-            className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
               activeTab === 'activity'
-                ? 'bg-[var(--accent-primary)] text-white'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-subtle)]'
+                ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                : 'bg-transparent text-neu-muted hover:text-neu-primary'
             }`}
           >
-            <BarChart3 className="w-4 h-4" /> Activity Report
+            <BarChart3 size={14} />
+            <span>Activity</span>
           </button>
           <button
             onClick={() => setActiveTab('projects')}
-            className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
               activeTab === 'projects'
-                ? 'bg-[var(--accent-primary)] text-white'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-subtle)]'
+                ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+                : 'bg-transparent text-neu-muted hover:text-neu-primary'
             }`}
           >
-            <FolderKanban className="w-4 h-4" /> Projects Summary
+            <FolderKanban size={14} />
+            <span>Projects</span>
           </button>
         </div>
 
         {/* Date Range Selectors */}
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-3 text-xs flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-[var(--text-muted)] font-medium">Start Date:</span>
+            <span className="text-neu-muted font-bold text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <Calendar size={13} /> From:
+            </span>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="input-custom"
+              className="input-custom py-1.5 text-xs rounded-xl"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[var(--text-muted)] font-medium">End Date:</span>
+            <span className="text-neu-muted font-bold text-[11px] uppercase tracking-wider">To:</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="input-custom"
+              className="input-custom py-1.5 text-xs rounded-xl"
             />
           </div>
           {(startDate || endDate) && (
@@ -137,7 +142,7 @@ export const ReportsPage: React.FC = () => {
                 setStartDate('');
                 setEndDate('');
               }}
-              className="text-[var(--accent-primary)] hover:underline font-semibold text-xs ml-2 cursor-pointer"
+              className="text-neu-accent hover:underline font-bold text-xs ml-1 cursor-pointer border-none bg-transparent"
             >
               Clear
             </button>
@@ -150,7 +155,7 @@ export const ReportsPage: React.FC = () => {
       ) : error ? (
         <ErrorAlert message={(error as Error).message} />
       ) : (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           {/* Timesheet Report View */}
           {activeTab === 'timesheet' && (
             <div>
@@ -172,14 +177,14 @@ export const ReportsPage: React.FC = () => {
                     <tbody>
                       {timesheetData.reports.map((r: any) => (
                         <tr key={r.id}>
-                          <td className="font-semibold text-[var(--text-primary)]">{r.user}</td>
-                          <td className="text-[var(--text-secondary)]">{r.project}</td>
-                          <td className="text-[var(--text-secondary)]">{r.task}</td>
-                          <td className="text-[var(--text-muted)]">{new Date(r.start).toLocaleString()}</td>
-                          <td className="text-[var(--text-muted)]">
-                            {r.end === 'Running' ? 'Running' : new Date(r.end).toLocaleString()}
+                          <td className="font-bold text-neu-primary">{r.user}</td>
+                          <td className="text-neu-secondary font-medium">{r.project}</td>
+                          <td className="text-neu-secondary font-medium">{r.task}</td>
+                          <td className="text-neu-muted text-xs tabular-nums">{new Date(r.start).toLocaleString()}</td>
+                          <td className="text-neu-muted text-xs tabular-nums">
+                            {r.end === 'Running' ? <span className="badge-emerald">Running</span> : new Date(r.end).toLocaleString()}
                           </td>
-                          <td className="text-right font-mono font-bold text-[var(--text-primary)]">{r.durationMinutes}</td>
+                          <td className="text-right font-mono font-bold text-neu-primary tabular-nums">{r.durationMinutes}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -210,10 +215,10 @@ export const ReportsPage: React.FC = () => {
                     <tbody>
                       {activityData.reports.map((s: any) => (
                         <tr key={s.id}>
-                          <td className="font-semibold text-[var(--text-primary)]">{s.user}</td>
-                          <td className="text-[var(--text-muted)]">{new Date(s.timestamp).toLocaleString()}</td>
-                          <td className="text-center font-mono text-indigo-500 font-semibold">{s.keyboardCount}</td>
-                          <td className="text-center font-mono text-emerald-500 font-semibold">{s.mouseCount}</td>
+                          <td className="font-bold text-neu-primary">{s.user}</td>
+                          <td className="text-neu-muted text-xs tabular-nums">{new Date(s.timestamp).toLocaleString()}</td>
+                          <td className="text-center font-mono text-neu-accent font-bold tabular-nums">{s.keyboardCount}</td>
+                          <td className="text-center font-mono text-emerald-500 font-bold tabular-nums">{s.mouseCount}</td>
                           <td className="text-center">
                             {s.isIdle ? (
                               <span className="badge-amber">Idle</span>
@@ -221,7 +226,7 @@ export const ReportsPage: React.FC = () => {
                               <span className="badge-emerald">Active</span>
                             )}
                           </td>
-                          <td className="text-[var(--text-muted)] max-w-xs truncate">{s.windowTitle || 'N/A'}</td>
+                          <td className="text-neu-muted max-w-xs truncate text-xs">{s.windowTitle || 'N/A'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -250,10 +255,10 @@ export const ReportsPage: React.FC = () => {
                     <tbody>
                       {projectsData.reports.map((p: any, idx: number) => (
                         <tr key={idx}>
-                          <td className="font-bold text-[var(--text-primary)]">{p.projectName}</td>
-                          <td className="text-[var(--text-secondary)]">{p.clientName}</td>
-                          <td className="text-center font-mono text-[var(--text-secondary)]">{p.entryCount}</td>
-                          <td className="text-right font-mono text-emerald-600 font-bold text-sm">
+                          <td className="font-bold text-neu-primary">{p.projectName}</td>
+                          <td className="text-neu-secondary font-medium">{p.clientName}</td>
+                          <td className="text-center font-mono text-neu-secondary tabular-nums font-semibold">{p.entryCount}</td>
+                          <td className="text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold text-sm tabular-nums">
                             {p.totalHours} hrs
                           </td>
                         </tr>
@@ -271,4 +276,3 @@ export const ReportsPage: React.FC = () => {
 };
 
 export default ReportsPage;
-

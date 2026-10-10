@@ -5,7 +5,6 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { EmptyState } from '../../components/EmptyState';
 
-
 export const TimesheetPage: React.FC = () => {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['weeklyTimesheet'],
@@ -29,7 +28,7 @@ export const TimesheetPage: React.FC = () => {
       {entries.length === 0 ? (
         <EmptyState title="No timesheet entries" message="You have not recorded any time entries for this period." />
       ) : (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           <div className="overflow-x-auto">
             <table className="table-custom">
               <thead>
@@ -45,15 +44,19 @@ export const TimesheetPage: React.FC = () => {
               <tbody>
                 {entries.map((entry: any) => (
                   <tr key={entry._id}>
-                    <td className="font-semibold text-[var(--text-primary)]">
+                    <td className="font-bold text-neu-primary tabular-nums">
                       {new Date(entry.start).toLocaleDateString()}
                     </td>
-                    <td className="text-[var(--text-secondary)]">{new Date(entry.start).toLocaleTimeString()}</td>
-                    <td className="text-[var(--text-secondary)]">
-                      {entry.end ? new Date(entry.end).toLocaleTimeString() : <span className="text-emerald-500 font-semibold">Active</span>}
+                    <td className="text-neu-secondary font-medium tabular-nums">{new Date(entry.start).toLocaleTimeString()}</td>
+                    <td className="text-neu-secondary font-medium tabular-nums">
+                      {entry.end ? (
+                        new Date(entry.end).toLocaleTimeString()
+                      ) : (
+                        <span className="badge-emerald font-bold">Active</span>
+                      )}
                     </td>
-                    <td className="font-mono font-bold text-indigo-500">
-                      {(entry.durationSeconds / 3600).toFixed(2)} hrs
+                    <td className="font-mono font-black text-neu-accent tabular-nums">
+                      {((entry.durationSeconds || 0) / 3600).toFixed(2)} hrs
                     </td>
                     <td>
                       {entry.isManualEdit ? (
@@ -62,7 +65,7 @@ export const TimesheetPage: React.FC = () => {
                         <span className="badge-indigo">Timer</span>
                       )}
                     </td>
-                    <td className="text-[var(--text-muted)]">
+                    <td className="text-neu-muted text-xs font-medium">
                       {entry.auditLogs?.length > 0 ? `${entry.auditLogs.length} Edit Audit(s)` : 'Original'}
                     </td>
                   </tr>
@@ -76,3 +79,4 @@ export const TimesheetPage: React.FC = () => {
   );
 };
 
+export default TimesheetPage;

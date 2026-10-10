@@ -154,7 +154,6 @@ export const ProjectsTasksPage: React.FC = () => {
     }
   };
 
-
   const isLoading = projsLoading || tasksLoading;
   const error = projsError || tasksError;
 
@@ -198,33 +197,41 @@ export const ProjectsTasksPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-6 border-b border-[var(--border-color)]">
+      {/* Neumorphic Segmented Tabs */}
+      <div className="inline-flex p-1.5 neu-inset rounded-2xl gap-2">
         <button
           onClick={() => setActiveTab('projects')}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'projects'
-              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          Projects ({projects.length})
+          <FolderKanban size={15} />
+          <span>Projects</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'projects' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
+            {projects.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('tasks')}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'tasks'
-              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          Tasks ({tasks.length})
+          <CheckSquare size={15} />
+          <span>Tasks</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'tasks' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
+            {tasks.length}
+          </span>
         </button>
       </div>
 
       {/* Projects Tab */}
       {activeTab === 'projects' && (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           {projects.length === 0 ? (
             <EmptyState title="No Projects Found" message="Create your first project using the Create Project button." />
           ) : (
@@ -241,29 +248,35 @@ export const ProjectsTasksPage: React.FC = () => {
                 <tbody>
                   {projects.map((p: any) => (
                     <tr key={p._id}>
-                      <td className="font-semibold text-[var(--text-primary)]">
-                        <div className="flex items-center gap-2">
-                          <FolderKanban className="w-4 h-4 text-indigo-500" />
-                          {p.name}
+                      <td className="font-bold text-neu-primary">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full neu-raised flex items-center justify-center text-neu-accent">
+                            <FolderKanban size={14} />
+                          </div>
+                          <span>{p.name}</span>
                         </div>
                       </td>
-                      <td className="text-[var(--text-secondary)]">{p.clientName || 'N/A'}</td>
-                      <td className="text-[var(--text-muted)] max-w-xs truncate">{p.description || 'No description'}</td>
-                      <td className="text-right space-x-2">
-                        <button
-                          onClick={() => handleEditProj(p)}
-                          className="p-1.5 rounded-lg bg-[var(--bg-card-subtle)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] transition-colors"
-                          title="Edit Project"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteProjMutation.mutate(p._id)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
-                          title="Delete Project"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="text-neu-secondary font-medium">{p.clientName || 'N/A'}</td>
+                      <td className="text-neu-muted max-w-xs truncate">{p.description || 'No description'}</td>
+                      <td className="text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditProj(p)}
+                            className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-accent"
+                            title="Edit Project"
+                            aria-label="Edit Project"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => deleteProjMutation.mutate(p._id)}
+                            className="btn-icon-circle w-8 h-8 text-rose-500 hover:text-rose-600"
+                            title="Delete Project"
+                            aria-label="Delete Project"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -276,7 +289,7 @@ export const ProjectsTasksPage: React.FC = () => {
 
       {/* Tasks Tab */}
       {activeTab === 'tasks' && (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           {tasks.length === 0 ? (
             <EmptyState title="No Tasks Found" message="Create your first task using the Create Task button." />
           ) : (
@@ -293,29 +306,35 @@ export const ProjectsTasksPage: React.FC = () => {
                 <tbody>
                   {tasks.map((t: any) => (
                     <tr key={t._id}>
-                      <td className="font-semibold text-[var(--text-primary)]">
-                        <div className="flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-emerald-500" />
-                          {t.title}
+                      <td className="font-bold text-neu-primary">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full neu-raised flex items-center justify-center text-emerald-500">
+                            <CheckSquare size={14} />
+                          </div>
+                          <span>{t.title}</span>
                         </div>
                       </td>
-                      <td className="text-[var(--text-secondary)]">{t.projectId?.name || 'Unassigned'}</td>
-                      <td className="text-[var(--text-muted)] max-w-xs truncate">{t.description || 'No description'}</td>
-                      <td className="text-right space-x-2">
-                        <button
-                          onClick={() => handleEditTask(t)}
-                          className="p-1.5 rounded-lg bg-[var(--bg-card-subtle)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] transition-colors"
-                          title="Edit Task"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteTaskMutation.mutate(t._id)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
-                          title="Delete Task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="text-neu-secondary font-medium">{t.projectId?.name || 'Unassigned'}</td>
+                      <td className="text-neu-muted max-w-xs truncate">{t.description || 'No description'}</td>
+                      <td className="text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditTask(t)}
+                            className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-accent"
+                            title="Edit Task"
+                            aria-label="Edit Task"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => deleteTaskMutation.mutate(t._id)}
+                            className="btn-icon-circle w-8 h-8 text-rose-500 hover:text-rose-600"
+                            title="Delete Task"
+                            aria-label="Delete Task"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -328,17 +347,23 @@ export const ProjectsTasksPage: React.FC = () => {
 
       {/* Project Modal */}
       {showProjModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-modal)] border border-[var(--border-color)] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{editingProj ? 'Edit Project' : 'Create Project'}</h3>
-              <button onClick={resetProjForm} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="neu-modal-card max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 dark:border-white/5 pb-3">
+              <h3 className="text-base font-extrabold text-neu-primary m-0">
+                {editingProj ? 'Edit Project' : 'Create Project'}
+              </h3>
+              <button
+                onClick={resetProjForm}
+                className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-primary"
+                aria-label="Close"
+              >
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={submitProjForm} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Project Name</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Project Name</label>
                 <input
                   type="text"
                   required
@@ -348,7 +373,7 @@ export const ProjectsTasksPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Client Name</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Client Name</label>
                 <input
                   type="text"
                   value={projClientName}
@@ -357,7 +382,7 @@ export const ProjectsTasksPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Description</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Description</label>
                 <textarea
                   rows={3}
                   value={projDescription}
@@ -365,7 +390,7 @@ export const ProjectsTasksPage: React.FC = () => {
                   className="input-custom w-full resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-3 border-t border-[var(--border-color)]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/10 dark:border-white/5">
                 <button
                   type="button"
                   onClick={resetProjForm}
@@ -388,17 +413,23 @@ export const ProjectsTasksPage: React.FC = () => {
 
       {/* Task Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-modal)] border border-[var(--border-color)] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{editingTask ? 'Edit Task' : 'Create Task'}</h3>
-              <button onClick={resetTaskForm} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="neu-modal-card max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 dark:border-white/5 pb-3">
+              <h3 className="text-base font-extrabold text-neu-primary m-0">
+                {editingTask ? 'Edit Task' : 'Create Task'}
+              </h3>
+              <button
+                onClick={resetTaskForm}
+                className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-primary"
+                aria-label="Close"
+              >
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={submitTaskForm} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Task Title</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Task Title</label>
                 <input
                   type="text"
                   required
@@ -408,7 +439,7 @@ export const ProjectsTasksPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Assign to Project</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Assign to Project</label>
                 <select
                   required
                   value={taskProjectId}
@@ -424,7 +455,7 @@ export const ProjectsTasksPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Description</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Description</label>
                 <textarea
                   rows={3}
                   value={taskDescription}
@@ -432,7 +463,7 @@ export const ProjectsTasksPage: React.FC = () => {
                   className="input-custom w-full resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-3 border-t border-[var(--border-color)]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/10 dark:border-white/5">
                 <button
                   type="button"
                   onClick={resetTaskForm}
@@ -457,4 +488,3 @@ export const ProjectsTasksPage: React.FC = () => {
 };
 
 export default ProjectsTasksPage;
-

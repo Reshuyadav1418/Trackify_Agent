@@ -9,7 +9,6 @@ export const PolicyConsentModal: React.FC = () => {
 
   if (!user || !activePolicy || hasAcceptedPolicy) return null;
 
-
   const handleAccept = async () => {
     try {
       setIsSubmitting(true);
@@ -23,88 +22,27 @@ export const PolicyConsentModal: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(2, 6, 23, 0.92)',
-        backdropFilter: 'blur(10px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid rgba(99, 102, 241, 0.3)',
-          borderRadius: '20px',
-          maxWidth: '560px',
-          width: '100%',
-          padding: '2.25rem',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(99, 102, 241, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ShieldAlert size={24} style={{ color: '#818cf8' }} />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="neu-modal-card max-w-xl w-full p-8 relative">
+        <div className="flex items-center gap-3.5 mb-5">
+          <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-neu-accent">
+            <ShieldAlert size={26} />
           </div>
           <div>
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: '#6366f1',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
+            <span className="text-xs font-bold text-neu-accent uppercase tracking-wider">
               Policy Update Required (v{activePolicy.version})
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
+            <h2 className="text-xl font-extrabold text-neu-primary m-0">
               Employee Tracking Policy
             </h2>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: '#0f172a',
-            border: '1px solid #334155',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            maxHeight: '220px',
-            overflowY: 'auto',
-            color: '#cbd5e1',
-            fontSize: '0.9rem',
-            lineHeight: 1.6,
-            marginBottom: '1.5rem',
-          }}
-        >
-          <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{activePolicy.consentText}</p>
-          <div
-            style={{
-              marginTop: '1rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid #1e293b',
-              fontSize: '0.8rem',
-              color: '#94a3b8',
-            }}
-          >
-            <strong>Policy Details:</strong>
-            <ul style={{ margin: '0.4rem 0 0 1.2rem', padding: 0 }}>
+        <div className="neu-inset p-5 max-h-56 overflow-y-auto text-sm leading-relaxed mb-6 text-neu-secondary rounded-xl">
+          <p className="m-0 whitespace-pre-line font-medium">{activePolicy.consentText}</p>
+          <div className="mt-4 pt-3 border-t border-white/10 dark:border-white/5 text-xs text-neu-muted">
+            <strong className="text-neu-primary">Policy Details:</strong>
+            <ul className="mt-1.5 ml-4 p-0 space-y-1 list-disc">
               <li>Screenshot Interval: {activePolicy.screenshotIntervalMinutes} minutes</li>
               <li>Blur Screenshots: {activePolicy.isBlurEnabled ? 'Enabled' : 'Disabled'}</li>
               <li>Retention Period: {activePolicy.retentionDays} days</li>
@@ -113,34 +51,20 @@ export const PolicyConsentModal: React.FC = () => {
         </div>
 
         {error && (
-          <div style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#fca5a5', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          <div className="neu-inset-sm p-3 rounded-lg text-xs font-bold text-rose-500 mb-4">
             {error}
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-xs font-medium text-neu-muted flex items-center gap-1.5">
             <Lock size={14} /> You must accept this policy to continue using Trackify.
           </span>
 
           <button
             onClick={handleAccept}
             disabled={isSubmitting}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#6366f1',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '0.75rem 1.5rem',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.7 : 1,
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
-            }}
+            className="btn-primary text-sm py-2.5 px-6 font-bold flex items-center gap-2"
           >
             <CheckCircle size={18} /> {isSubmitting ? 'Accepting...' : 'I Accept Policy'}
           </button>

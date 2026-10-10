@@ -50,20 +50,22 @@ export const ManualEntryPage: React.FC = () => {
 
       <div className="card-panel space-y-6">
         {successMessage && (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 shrink-0" /> {successMessage}
+          <div className="neu-inset-sm p-4 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+            <CheckCircle size={18} className="shrink-0" />
+            <span>{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 shrink-0" /> {errorMessage}
+          <div className="neu-inset-sm p-4 rounded-xl text-rose-500 text-xs font-bold flex items-center gap-2">
+            <AlertTriangle size={18} className="shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block text-[var(--text-secondary)] mb-1 font-semibold">
+            <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">
               Start Date & Time *
             </label>
             <input
@@ -76,7 +78,7 @@ export const ManualEntryPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[var(--text-secondary)] mb-1 font-semibold">
+            <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">
               End Date & Time *
             </label>
             <input
@@ -89,7 +91,7 @@ export const ManualEntryPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[var(--text-secondary)] mb-1 font-semibold">
+            <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">
               Reason for Manual Entry *
             </label>
             <textarea
@@ -98,9 +100,9 @@ export const ManualEntryPage: React.FC = () => {
               placeholder="e.g. Forgot to turn on agent timer during client call"
               rows={4}
               required
-              className="input-custom w-full resize-y"
+              className="input-custom w-full resize-y leading-relaxed"
             />
-            <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+            <span className="text-[11px] text-neu-muted mt-1.5 block font-medium">
               * Every manual time edit is permanently recorded in audit logs.
             </span>
           </div>
@@ -108,9 +110,10 @@ export const ManualEntryPage: React.FC = () => {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="btn-primary w-full justify-center"
+            className="btn-primary w-full justify-center py-2.5 font-bold text-sm"
           >
-            <FilePlus className="w-4 h-4" /> {mutation.isPending ? 'Submitting...' : 'Submit Manual Entry'}
+            <FilePlus size={16} />
+            <span>{mutation.isPending ? 'Submitting...' : 'Submit Manual Entry'}</span>
           </button>
         </form>
       </div>
@@ -119,4 +122,3 @@ export const ManualEntryPage: React.FC = () => {
 };
 
 export default ManualEntryPage;
-

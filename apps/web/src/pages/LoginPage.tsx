@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ThemeToggle } from '../context/ThemeContext';
 
 export const LoginPage: React.FC = () => {
   const { login, user } = useAuth();
@@ -40,120 +41,61 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#0f172a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          backgroundColor: 'rgba(30, 41, 59, 0.7)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '20px',
-          padding: '2.5rem',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '1rem',
-              boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)',
-            }}
-          >
-            <Sparkles size={26} color="#ffffff" />
+    <div className="min-h-screen bg-neu-bg flex items-center justify-center p-6 text-neu-primary relative">
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
+
+      <div className="w-full max-w-md neu-raised-lg p-10 relative">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl neu-raised inline-flex items-center justify-center mb-4 text-neu-accent shadow-neu-raised">
+            <Sparkles size={28} />
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+          <h1 className="text-2xl font-black text-neu-primary m-0 tracking-tight">
             Welcome to Trackify
           </h1>
-          <p style={{ fontSize: '0.9rem', color: '#94a3b8', margin: 0 }}>
+          <p className="text-xs text-neu-muted mt-1.5 font-medium">
             Sign in to access your employee & manager portal
           </p>
         </div>
 
         {error && (
-          <div
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              padding: '0.85rem 1rem',
-              borderRadius: '10px',
-              fontSize: '0.875rem',
-              marginBottom: '1.5rem',
-            }}
-          >
-            {error}
+          <div className="neu-inset-sm text-rose-500 p-3.5 rounded-xl text-xs font-bold mb-6 flex items-center gap-2">
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '0.4rem' }}>
+            <label className="block text-xs font-bold uppercase tracking-wider text-neu-muted mb-2 pl-1">
               Email Address
             </label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <div className="relative flex items-center">
+              <Mail size={16} className="absolute left-3.5 text-neu-muted pointer-events-none" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@trackify.com"
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid #334155',
-                  borderRadius: '10px',
-                  color: '#f8fafc',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                className="input-custom w-full pl-10"
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '0.4rem' }}>
+            <label className="block text-xs font-bold uppercase tracking-wider text-neu-muted mb-2 pl-1">
               Password
             </label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <div className="relative flex items-center">
+              <Lock size={16} className="absolute left-3.5 text-neu-muted pointer-events-none" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid #334155',
-                  borderRadius: '10px',
-                  color: '#f8fafc',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                className="input-custom w-full pl-10"
               />
             </div>
           </div>
@@ -161,37 +103,21 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            style={{
-              marginTop: '0.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#6366f1',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '0.85rem',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.7 : 1,
-              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
-              transition: 'all 0.15s ease',
-            }}
+            className="btn-primary w-full justify-center py-3 text-sm font-bold flex items-center gap-2 mt-2"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign In'} <ArrowRight size={18} />
+            <span>{isSubmitting ? 'Signing in...' : 'Sign In'}</span>
+            <ArrowRight size={16} />
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid #334155', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-            <ShieldCheck size={14} style={{ color: '#22c55e' }} /> Protected by Trackify Security & Token Rotation
+        <div className="mt-8 pt-5 border-t border-white/10 dark:border-white/5 text-center">
+          <span className="text-[11px] font-semibold text-neu-muted inline-flex items-center justify-center gap-1.5">
+            <ShieldCheck size={14} className="text-emerald-500" /> Protected by Trackify Security
           </span>
-
         </div>
-
       </div>
     </div>
   );
 };
+
+export default LoginPage;

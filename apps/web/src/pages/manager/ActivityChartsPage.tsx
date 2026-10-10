@@ -84,12 +84,12 @@ export const ActivityChartsPage: React.FC = () => {
         </div>
 
         {/* User filter */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-[var(--text-muted)]" />
+        <div className="flex items-center gap-2 neu-inset-sm px-3 py-2 rounded-xl">
+          <Filter size={14} className="text-neu-muted" />
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="input-custom text-xs cursor-pointer"
+            className="bg-transparent border-none p-0 text-xs text-neu-primary font-bold cursor-pointer outline-none"
           >
             <option value="all">All Team Members</option>
             {users.map((u: any) => (
@@ -104,42 +104,42 @@ export const ActivityChartsPage: React.FC = () => {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card-panel flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
-            <Keyboard className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-neu-accent">
+            <Keyboard size={22} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-medium">Keyboard Keypresses</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{totalKeyboard.toLocaleString()}</p>
+            <p className="text-[11px] text-neu-muted font-bold uppercase tracking-wider m-0">Keyboard Strokes</p>
+            <p className="text-2xl font-black text-neu-primary mt-0.5 tabular-nums m-0">{totalKeyboard.toLocaleString()}</p>
           </div>
         </div>
 
         <div className="card-panel flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-            <MousePointer className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-emerald-500">
+            <MousePointer size={22} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-medium">Mouse Clicks</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{totalMouse.toLocaleString()}</p>
+            <p className="text-[11px] text-neu-muted font-bold uppercase tracking-wider m-0">Mouse Clicks</p>
+            <p className="text-2xl font-black text-neu-primary mt-0.5 tabular-nums m-0">{totalMouse.toLocaleString()}</p>
           </div>
         </div>
 
         <div className="card-panel flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-            <Activity className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-blue-500">
+            <Activity size={22} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-medium">Active Samples</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{activeCount}</p>
+            <p className="text-[11px] text-neu-muted font-bold uppercase tracking-wider m-0">Active Samples</p>
+            <p className="text-2xl font-black text-neu-primary mt-0.5 tabular-nums m-0">{activeCount.toLocaleString()}</p>
           </div>
         </div>
 
         <div className="card-panel flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-            <Clock className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-amber-500">
+            <Clock size={22} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-medium">Idle Samples</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-0.5">{idleCount}</p>
+            <p className="text-[11px] text-neu-muted font-bold uppercase tracking-wider m-0">Idle Samples</p>
+            <p className="text-2xl font-black text-neu-primary mt-0.5 tabular-nums m-0">{idleCount.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -150,34 +150,35 @@ export const ActivityChartsPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Keypress & Mouse Area Chart */}
           <div className="card-panel">
-            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">Input Activity Over Time</h3>
-            <p className="text-xs text-[var(--text-muted)] mb-6">Keyboard strokes vs mouse clicks per minute bucket.</p>
+            <h3 className="text-base font-extrabold text-neu-primary mb-1">Input Activity Over Time</h3>
+            <p className="text-xs text-neu-muted mb-6 font-medium">Keyboard strokes vs mouse clicks per minute bucket.</p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorKeyboard" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#818cf8" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#5B6CFF" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#5B6CFF" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorMouse" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)" />
                   <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={11} />
                   <YAxis stroke="var(--text-muted)" fontSize={11} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--bg-modal)', borderColor: 'var(--border-color)', borderRadius: '0.75rem', color: 'var(--text-primary)' }}
-                    itemStyle={{ fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: 'var(--bg)', border: 'none', borderRadius: '1rem', boxShadow: 'var(--shadow-raised-lg)', color: 'var(--text-primary)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 600 }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
                   <Area
                     type="monotone"
                     dataKey="keyboard"
                     name="Keyboard Strokes"
-                    stroke="#818cf8"
+                    stroke="#5B6CFF"
+                    strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorKeyboard)"
                   />
@@ -185,7 +186,8 @@ export const ActivityChartsPage: React.FC = () => {
                     type="monotone"
                     dataKey="mouse"
                     name="Mouse Clicks"
-                    stroke="#34d399"
+                    stroke="#10B981"
+                    strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorMouse)"
                   />
@@ -196,21 +198,21 @@ export const ActivityChartsPage: React.FC = () => {
 
           {/* Active vs Idle Bar Chart */}
           <div className="card-panel">
-            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">Active vs Idle State</h3>
-            <p className="text-xs text-[var(--text-muted)] mb-6">Distribution of active and idle state flags.</p>
+            <h3 className="text-base font-extrabold text-neu-primary mb-1">Active vs Idle State</h3>
+            <p className="text-xs text-neu-muted mb-6 font-medium">Distribution of active and idle state flags.</p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)" />
                   <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={11} />
                   <YAxis stroke="var(--text-muted)" fontSize={11} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--bg-modal)', borderColor: 'var(--border-color)', borderRadius: '0.75rem', color: 'var(--text-primary)' }}
-                    itemStyle={{ fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: 'var(--bg)', border: 'none', borderRadius: '1rem', boxShadow: 'var(--shadow-raised-lg)', color: 'var(--text-primary)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 600 }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="active" name="Active Minutes" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="idle" name="Idle Minutes" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
+                  <Bar dataKey="active" name="Active Minutes" fill="#5B6CFF" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="idle" name="Idle Minutes" fill="#F59E0B" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -222,4 +224,3 @@ export const ActivityChartsPage: React.FC = () => {
 };
 
 export default ActivityChartsPage;
-

@@ -17,38 +17,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   const displayText = description || message || 'There is currently no data to display.';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '3.5rem 1.5rem',
-        backgroundColor: 'var(--bg-card-subtle)',
-        border: '1px dashed var(--border-color)',
-        borderRadius: '16px',
-        textAlign: 'center',
-        margin: '1rem 0',
-      }}
-    >
-      <div
-        style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--accent-light)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '1rem',
-        }}
-      >
-        <Inbox size={28} style={{ color: 'var(--accent-primary)' }} />
+    <div className="flex flex-col items-center justify-center py-12 px-6 neu-inset rounded-2xl text-center my-4">
+      <div className="w-16 h-16 rounded-full neu-raised flex items-center justify-center mb-4 text-neu-accent">
+        <Inbox size={28} />
       </div>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.4rem 0' }}>{title}</h3>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, maxWidth: '400px' }}>{displayText}</p>
-      {action && <div style={{ marginTop: '1.25rem' }}>{action}</div>}
+      <h3 className="text-base font-bold text-neu-primary mb-1.5">{title}</h3>
+      <p className="text-sm font-medium text-neu-muted max-w-md">{displayText}</p>
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 };
-

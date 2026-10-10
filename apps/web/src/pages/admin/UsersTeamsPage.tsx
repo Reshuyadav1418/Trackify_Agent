@@ -13,8 +13,7 @@ import {
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { EmptyState } from '../../components/EmptyState';
-import { UserPlus, Trash2, Edit2, Plus, X } from 'lucide-react';
-
+import { UserPlus, Trash2, Edit2, Plus, X, Users as UsersIcon, Shield, Briefcase } from 'lucide-react';
 
 export const UsersTeamsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -199,33 +198,41 @@ export const UsersTeamsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-6 border-b border-[var(--border-color)]">
+      {/* Neumorphic Segmented Tabs */}
+      <div className="inline-flex p-1.5 neu-inset rounded-2xl gap-2">
         <button
           onClick={() => setActiveTab('users')}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'users'
-              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          Users ({users.length})
+          <UsersIcon size={15} />
+          <span>Users</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'users' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
+            {users.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('teams')}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer border-none ${
             activeTab === 'teams'
-              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'neu-raised text-neu-accent shadow-neu-raised-sm'
+              : 'bg-transparent text-neu-muted hover:text-neu-primary'
           }`}
         >
-          Teams ({teams.length})
+          <Briefcase size={15} />
+          <span>Teams</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'teams' ? 'neu-inset-sm text-neu-accent' : 'neu-inset-sm text-neu-muted'}`}>
+            {teams.length}
+          </span>
         </button>
       </div>
 
       {/* Users Tab Content */}
       {activeTab === 'users' && (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           {users.length === 0 ? (
             <EmptyState title="No Users Found" message="Create your first user using the Add User button above." />
           ) : (
@@ -242,46 +249,51 @@ export const UsersTeamsPage: React.FC = () => {
                 <tbody>
                   {users.map((u: any) => (
                     <tr key={u._id}>
-                      <td className="font-medium text-[var(--text-primary)]">
+                      <td className="font-medium text-neu-primary">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-xs text-white">
+                          <div className="w-9 h-9 rounded-full neu-raised flex items-center justify-center font-bold text-xs text-neu-accent">
                             {u.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-[var(--text-primary)]">{u.name}</p>
-                            <p className="text-[11px] text-[var(--text-muted)]">{u.email}</p>
+                            <p className="font-bold text-neu-primary m-0">{u.name}</p>
+                            <p className="text-xs text-neu-muted m-0">{u.email}</p>
                           </div>
                         </div>
                       </td>
                       <td>
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase ${
+                          className={
                             u.role === 'admin'
-                              ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                              ? 'badge-indigo'
                               : u.role === 'manager'
-                              ? 'bg-indigo-500/10 text-indigo-600 border border-indigo-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                          }`}
+                              ? 'badge-amber'
+                              : 'badge-emerald'
+                          }
                         >
+                          <Shield size={12} />
                           {u.role}
                         </span>
                       </td>
-                      <td className="text-[var(--text-secondary)]">{u.teamId?.name || 'No Team'}</td>
-                      <td className="text-right space-x-2">
-                        <button
-                          onClick={() => handleEditUser(u)}
-                          className="p-1.5 rounded-lg bg-[var(--bg-card-subtle)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] transition-colors"
-                          title="Edit User"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteUserMutation.mutate(u._id)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="text-neu-secondary font-medium">{u.teamId?.name || 'No Team'}</td>
+                      <td className="text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditUser(u)}
+                            className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-accent"
+                            title="Edit User"
+                            aria-label="Edit User"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => deleteUserMutation.mutate(u._id)}
+                            className="btn-icon-circle w-8 h-8 text-rose-500 hover:text-rose-600"
+                            title="Delete User"
+                            aria-label="Delete User"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -294,7 +306,7 @@ export const UsersTeamsPage: React.FC = () => {
 
       {/* Teams Tab Content */}
       {activeTab === 'teams' && (
-        <div className="card-panel !p-0 overflow-hidden">
+        <div className="table-custom-wrapper">
           {teams.length === 0 ? (
             <EmptyState title="No Teams Found" message="Create your first team using the Create Team button." />
           ) : (
@@ -311,24 +323,28 @@ export const UsersTeamsPage: React.FC = () => {
                 <tbody>
                   {teams.map((t: any) => (
                     <tr key={t._id}>
-                      <td className="font-semibold text-[var(--text-primary)]">{t.name}</td>
-                      <td className="text-[var(--text-secondary)]">{t.managerId?.name || 'Unassigned'}</td>
-                      <td className="text-[var(--text-muted)]">{t.memberIds?.length || 0} members</td>
-                      <td className="text-right space-x-2">
-                        <button
-                          onClick={() => handleEditTeam(t)}
-                          className="p-1.5 rounded-lg bg-[var(--bg-card-subtle)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] transition-colors"
-                          title="Edit Team"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteTeamMutation.mutate(t._id)}
-                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
-                          title="Delete Team"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="font-bold text-neu-primary">{t.name}</td>
+                      <td className="text-neu-secondary font-medium">{t.managerId?.name || 'Unassigned'}</td>
+                      <td className="text-neu-muted tabular-nums">{t.memberIds?.length || 0} members</td>
+                      <td className="text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditTeam(t)}
+                            className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-accent"
+                            title="Edit Team"
+                            aria-label="Edit Team"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => deleteTeamMutation.mutate(t._id)}
+                            className="btn-icon-circle w-8 h-8 text-rose-500 hover:text-rose-600"
+                            title="Delete Team"
+                            aria-label="Delete Team"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -341,17 +357,23 @@ export const UsersTeamsPage: React.FC = () => {
 
       {/* User Form Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-modal)] border border-[var(--border-color)] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{editingUser ? 'Edit User' : 'Add New User'}</h3>
-              <button onClick={resetUserForm} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="neu-modal-card max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 dark:border-white/5 pb-3">
+              <h3 className="text-base font-extrabold text-neu-primary m-0">
+                {editingUser ? 'Edit User' : 'Add New User'}
+              </h3>
+              <button
+                onClick={resetUserForm}
+                className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-primary"
+                aria-label="Close"
+              >
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={submitUserForm} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Full Name</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Full Name</label>
                 <input
                   type="text"
                   required
@@ -364,7 +386,7 @@ export const UsersTeamsPage: React.FC = () => {
               {!editingUser && (
                 <>
                   <div>
-                    <label className="block text-[var(--text-secondary)] mb-1 font-medium">Email Address</label>
+                    <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Email Address</label>
                     <input
                       type="email"
                       required
@@ -374,7 +396,7 @@ export const UsersTeamsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[var(--text-secondary)] mb-1 font-medium">Password</label>
+                    <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Password</label>
                     <input
                       type="password"
                       required
@@ -387,7 +409,7 @@ export const UsersTeamsPage: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Role</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Role</label>
                 <select
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value as any)}
@@ -400,7 +422,7 @@ export const UsersTeamsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Assign Team</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Assign Team</label>
                 <select
                   value={userTeamId}
                   onChange={(e) => setUserTeamId(e.target.value)}
@@ -415,7 +437,7 @@ export const UsersTeamsPage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-[var(--border-color)]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/10 dark:border-white/5">
                 <button
                   type="button"
                   onClick={resetUserForm}
@@ -438,17 +460,23 @@ export const UsersTeamsPage: React.FC = () => {
 
       {/* Team Form Modal */}
       {showTeamModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-modal)] border border-[var(--border-color)] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{editingTeam ? 'Edit Team' : 'Create Team'}</h3>
-              <button onClick={resetTeamForm} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="neu-modal-card max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 dark:border-white/5 pb-3">
+              <h3 className="text-base font-extrabold text-neu-primary m-0">
+                {editingTeam ? 'Edit Team' : 'Create Team'}
+              </h3>
+              <button
+                onClick={resetTeamForm}
+                className="btn-icon-circle w-8 h-8 text-neu-muted hover:text-neu-primary"
+                aria-label="Close"
+              >
+                <X size={16} />
               </button>
             </div>
             <form onSubmit={submitTeamForm} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Team Name</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Team Name</label>
                 <input
                   type="text"
                   required
@@ -459,7 +487,7 @@ export const UsersTeamsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Team Manager</label>
+                <label className="block text-neu-muted mb-1.5 font-bold uppercase tracking-wider text-[11px]">Team Manager</label>
                 <select
                   value={teamManagerId}
                   onChange={(e) => setTeamManagerId(e.target.value)}
@@ -474,7 +502,7 @@ export const UsersTeamsPage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-[var(--border-color)]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/10 dark:border-white/5">
                 <button
                   type="button"
                   onClick={resetTeamForm}
@@ -499,4 +527,3 @@ export const UsersTeamsPage: React.FC = () => {
 };
 
 export default UsersTeamsPage;
-
