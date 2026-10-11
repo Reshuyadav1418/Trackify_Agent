@@ -115,9 +115,18 @@ export const SummaryPage: React.FC = () => {
   let idleSecondsTotal = 0;
 
   entries.forEach((e: any) => {
-    const dur = Number(e.durationSeconds) || 0;
+    let dur = Number(e.durationSeconds) || 0;
     const brk = Number(e.breakSeconds) || 0;
     const idle = Number(e.idleSeconds) || 0;
+
+    // If session is actively running (no end date), compute real-time elapsed duration
+    if (!e.end && e.start) {
+      const elapsed = Math.max(0, Math.floor((Date.now() - new Date(e.start).getTime()) / 1000));
+      if (dur === 0) {
+        dur = elapsed;
+      }
+    }
+
     totalWorkedSeconds += dur;
     breakSecondsTotal += brk;
     idleSecondsTotal += idle;

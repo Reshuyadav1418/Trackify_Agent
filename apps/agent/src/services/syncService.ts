@@ -120,6 +120,7 @@ export class SyncService {
         end: e.end,
         durationSeconds: e.durationSeconds,
         breakSeconds: e.breakSeconds,
+        idleSeconds: e.idleSeconds || 0,
         isManualEdit: false,
         isSync: true,
       }));

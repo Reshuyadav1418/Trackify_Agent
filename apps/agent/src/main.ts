@@ -199,7 +199,7 @@ function startTrackingSession(project: any, task: any, serverEntryId?: string) {
   // Minute-level activity sample logger
   if (minuteTimer) clearInterval(minuteTimer);
   minuteTimer = setInterval(() => {
-    if (!isOnBreak) {
+    if (!isOnBreak || isAutoIdle) {
       logMinuteSample();
     }
   }, 60000);
@@ -240,12 +240,18 @@ function handlePauseBreak(isAuto: boolean = false) {
   isAutoIdle = isAuto;
   breakStartTime = now;
 
-  // NO DATA RECORDED IN BREAK PERIOD: Stop input tracker, minute samples, and screenshots
   inputTracker.stop();
-  if (minuteTimer) {
-    clearInterval(minuteTimer);
-    minuteTimer = null;
+  if (!isAuto) {
+    // Manual break: stop minute activity logger
+    if (minuteTimer) {
+      clearInterval(minuteTimer);
+      minuteTimer = null;
+    }
+  } else {
+    // Auto-idle inactivity: immediately record idle sample so timeline shows red bar
+    logMinuteSample();
   }
+
   if (screenshotTimer) {
     clearTimeout(screenshotTimer);
     screenshotTimer = null;
@@ -283,11 +289,12 @@ function handleResumeBreak() {
   inputTracker.start();
   if (minuteTimer) clearInterval(minuteTimer);
   minuteTimer = setInterval(() => {
-    if (!isOnBreak) {
+    if (!isOnBreak || isAutoIdle) {
       logMinuteSample();
     }
   }, 60000);
 
+  logMinuteSample();
   scheduleNextScreenshot(false);
   console.log(`[Main] Break ended. Resuming active work directly from: ${accumulatedWorkedSeconds}s`);
   updateTrayMenu();
@@ -388,25 +395,53 @@ async function handleStopTracking(resetDaily = false) {
   syncService.flushAll().catch(() => {});
 }
 
+function syncCurrentSessionProgress() {
+  if (!isTracking || !activeUser || !currentSessionId) return;
+
+  const now = Date.now();
+  let currentActive = accumulatedWorkedSeconds;
+  if (!isOnBreak && currentSegmentStartTime) {
+    currentActive += Math.max(0, Math.floor((now - currentSegmentStartTime) / 1000));
+  }
+
+  const payload = {
+    id: currentSessionId,
+    start: currentSessionStartIso || new Date(now - currentActive * 1000).toISOString(),
+    end: null, // Session still open
+    durationSeconds: currentActive,
+    breakSeconds: totalBreakSecondsToday,
+    idleSeconds: totalIdleSecondsToday,
+    projectId: activeProject?._id || activeProject?.id || null,
+    taskId: activeTask?._id || activeTask?.id || null,
+    description: activeTask?.title || activeProject?.name || '',
+    isManualEdit: false,
+    isSync: true,
+  };
+
+  apiClient.syncTimeEntries([payload]).catch(() => {});
+}
+
 function logMinuteSample() {
-  if (!isTracking || isOnBreak || !activeUser) return;
+  if (!isTracking || (isOnBreak && !isAutoIdle) || !activeUser) return;
 
   const timeoutSec = 10;
   const metrics = inputTracker.getMinuteMetrics(timeoutSec);
   const minuteBucket = new Date().toISOString().slice(0, 16);
+  const isActuallyIdle = isAutoIdle || metrics.isIdle;
 
   localQueue.enqueueActivitySample({
     userId: activeUser._id || activeUser.id,
     minuteBucket,
-    keyboardCount: metrics.keyboardCount,
-    mouseCount: metrics.mouseCount,
-    isIdle: metrics.isIdle,
+    keyboardCount: isActuallyIdle ? 0 : metrics.keyboardCount,
+    mouseCount: isActuallyIdle ? 0 : metrics.mouseCount,
+    isIdle: isActuallyIdle,
     timestamp: new Date().toISOString(),
-    windowTitle: 'Trackify Agent Workspace',
-    isSync: false, // Flag maintained as isSync: false until synced
+    windowTitle: isActuallyIdle ? 'Trackify Agent - Inactivity / Idle' : 'Trackify Agent Workspace',
+    isSync: false,
   });
 
   syncService.flushAll().catch(() => {});
+  syncCurrentSessionProgress();
   notifyStatusChange();
 }
 
