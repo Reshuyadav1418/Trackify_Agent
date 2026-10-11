@@ -69,13 +69,25 @@ export class SyncService {
 
     try {
       // 1. Flush Pending Time Entries (isSync: false)
-      await this.flushTimeEntries();
+      try {
+        await this.flushTimeEntries();
+      } catch (err: any) {
+        console.warn(`[SyncService] Time entries sync cycle error:`, err?.message || err);
+      }
 
       // 2. Flush Pending Activity Samples (isSync: false)
-      await this.flushActivitySamples();
+      try {
+        await this.flushActivitySamples();
+      } catch (err: any) {
+        console.warn(`[SyncService] Activity samples sync cycle error:`, err?.message || err);
+      }
 
       // 3. Flush Pending Offline Screenshots (isSync: false)
-      await this.flushScreenshots();
+      try {
+        await this.flushScreenshots();
+      } catch (err: any) {
+        console.warn(`[SyncService] Screenshots sync cycle error:`, err?.message || err);
+      }
 
       this.isOnline = true;
       this.lastSyncedAt = new Date().toISOString();

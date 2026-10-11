@@ -45,6 +45,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     res.json({
       message: 'Login successful',
       accessToken,
+      refreshToken,
       user: {
         id: user._id,
         email: user.email,
@@ -60,7 +61,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
 export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken || (req.headers['x-refresh-token'] as string);
     if (!refreshToken) {
       throw new AppError('Refresh token missing', 401);
     }
@@ -93,6 +94,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     res.json({
       message: 'Token refreshed',
       accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     });
   } catch (error) {
     next(error);

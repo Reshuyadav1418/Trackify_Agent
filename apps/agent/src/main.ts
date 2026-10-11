@@ -606,6 +606,8 @@ function registerIpcHandlers() {
     } catch (_) {}
 
     notifyStatusChange();
+    // Immediately attempt to sync any offline screenshots or queued samples
+    syncService.flushAll().catch((err) => console.warn('[Main] Post-login sync flush notice:', err?.message));
     return res;
   });
 
