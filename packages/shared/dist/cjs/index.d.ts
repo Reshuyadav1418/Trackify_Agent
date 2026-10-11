@@ -273,26 +273,26 @@ export declare const SyncTimeEntryItemSchema: z.ZodObject<{
     isManualEdit: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
+    isManualEdit: boolean;
     durationSeconds: number;
     breakSeconds: number;
     start: string | Date;
-    isManualEdit: boolean;
     isSync: boolean;
+    end?: string | Date | null | undefined;
     id?: string | undefined;
     description?: string | undefined;
     projectId?: string | null | undefined;
     taskId?: string | null | undefined;
-    end?: string | Date | null | undefined;
 }, {
     start: string | Date;
+    isManualEdit?: boolean | undefined;
+    end?: string | Date | null | undefined;
     id?: string | undefined;
     description?: string | undefined;
     projectId?: string | null | undefined;
     taskId?: string | null | undefined;
     durationSeconds?: number | undefined;
     breakSeconds?: number | undefined;
-    end?: string | Date | null | undefined;
-    isManualEdit?: boolean | undefined;
     isSync?: boolean | undefined;
 }>;
 export type SyncTimeEntryItem = z.infer<typeof SyncTimeEntryItemSchema>;
@@ -309,52 +309,52 @@ export declare const SyncTimeEntriesSchema: z.ZodObject<{
         isManualEdit: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
         isSync: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     }, "strip", z.ZodTypeAny, {
+        isManualEdit: boolean;
         durationSeconds: number;
         breakSeconds: number;
         start: string | Date;
-        isManualEdit: boolean;
         isSync: boolean;
+        end?: string | Date | null | undefined;
         id?: string | undefined;
         description?: string | undefined;
         projectId?: string | null | undefined;
         taskId?: string | null | undefined;
-        end?: string | Date | null | undefined;
     }, {
         start: string | Date;
+        isManualEdit?: boolean | undefined;
+        end?: string | Date | null | undefined;
         id?: string | undefined;
         description?: string | undefined;
         projectId?: string | null | undefined;
         taskId?: string | null | undefined;
         durationSeconds?: number | undefined;
         breakSeconds?: number | undefined;
-        end?: string | Date | null | undefined;
-        isManualEdit?: boolean | undefined;
         isSync?: boolean | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     entries: {
+        isManualEdit: boolean;
         durationSeconds: number;
         breakSeconds: number;
         start: string | Date;
-        isManualEdit: boolean;
         isSync: boolean;
+        end?: string | Date | null | undefined;
         id?: string | undefined;
         description?: string | undefined;
         projectId?: string | null | undefined;
         taskId?: string | null | undefined;
-        end?: string | Date | null | undefined;
     }[];
 }, {
     entries: {
         start: string | Date;
+        isManualEdit?: boolean | undefined;
+        end?: string | Date | null | undefined;
         id?: string | undefined;
         description?: string | undefined;
         projectId?: string | null | undefined;
         taskId?: string | null | undefined;
         durationSeconds?: number | undefined;
         breakSeconds?: number | undefined;
-        end?: string | Date | null | undefined;
-        isManualEdit?: boolean | undefined;
         isSync?: boolean | undefined;
     }[];
 }>;
@@ -366,14 +366,14 @@ export declare const CreateManualEntrySchema: z.ZodObject<{
     end: z.ZodUnion<[z.ZodString, z.ZodDate]>;
     reason: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    start: string | Date;
     end: string | Date;
+    start: string | Date;
     reason: string;
     projectId?: string | undefined;
     taskId?: string | undefined;
 }, {
-    start: string | Date;
     end: string | Date;
+    start: string | Date;
     reason: string;
     projectId?: string | undefined;
     taskId?: string | undefined;
@@ -387,16 +387,16 @@ export declare const UpdateManualEntrySchema: z.ZodObject<{
     reason: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     reason: string;
+    end?: string | Date | undefined;
     projectId?: string | undefined;
     taskId?: string | undefined;
     start?: string | Date | undefined;
-    end?: string | Date | undefined;
 }, {
     reason: string;
+    end?: string | Date | undefined;
     projectId?: string | undefined;
     taskId?: string | undefined;
     start?: string | Date | undefined;
-    end?: string | Date | undefined;
 }>;
 export type UpdateManualEntryInput = z.infer<typeof UpdateManualEntrySchema>;
 export declare const ActivitySampleSchema: z.ZodObject<{
@@ -509,4 +509,5 @@ export interface HelloSharedResponse {
     app: string;
 }
 export declare const getHelloShared: () => HelloSharedResponse;
+export * from './timeline';
 //# sourceMappingURL=index.d.ts.map

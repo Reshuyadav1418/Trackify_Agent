@@ -177,6 +177,12 @@ export const updateTimeEntryNotesApi = async (id: string, description: string) =
   return res.data;
 };
 
+// Timeline
+export const getTimelineApi = async (params?: { userId?: string; from?: string; to?: string; dayReset?: string; dateStr?: string }) => {
+  const res = await api.get('/api/timeline', { params });
+  return res.data;
+};
+
 // Screenshots
 export const getScreenshotByIdApi = async (id: string) => {
   const res = await api.get(`/api/screenshots/${id}`);

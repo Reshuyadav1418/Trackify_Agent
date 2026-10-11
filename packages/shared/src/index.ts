@@ -203,3 +203,7 @@ export const getHelloShared = (): HelloSharedResponse => ({
   message: 'Hello from @teamlogger/shared package!',
   app: APP_NAME,
 });
+
+// Timeline pure module & types
+export * from './timeline';
+

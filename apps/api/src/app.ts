@@ -14,6 +14,7 @@ import entriesRoutes from './routes/entries.routes';
 import activityRoutes from './routes/activity.routes';
 import screenshotRoutes from './routes/screenshot.routes';
 import reportsRoutes from './routes/reports.routes';
+import timelineRoutes from './routes/timeline.routes';
 
 import { errorHandler } from './middleware/error.middleware';
 import { getHelloShared } from '@teamlogger/shared';
@@ -90,7 +91,8 @@ export const createApp = () => {
   app.use('/api/activity', activityRoutes);
   app.use('/api/screenshots', screenshotRoutes);
   app.use('/api/reports', reportsRoutes);
-
+  app.use('/api/timeline', timelineRoutes);
+  app.use('/timeline', timelineRoutes);
 
   // 7. Centralized Error Handler
   app.use(errorHandler);

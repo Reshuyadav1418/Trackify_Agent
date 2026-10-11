@@ -10,6 +10,7 @@ import {
   getUsersApi,
 } from '../api/services';
 import { LoadingSpinner } from './LoadingSpinner';
+import { ActivityTimelineRuler } from './ActivityTimelineRuler';
 import {
   RotateCw,
   Trash2,
@@ -259,235 +260,6 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
     return result.sort((a, b) => b.start.getTime() - a.start.getTime());
   }, [timeEntries, screenshots, user]);
 
-  // Timeline ruler hourly tick marks (24 hours starting from dayReset)
-  const timelineHours = useMemo(() => {
-    const [startH] = dayReset.split(':').map(Number);
-    const hours: string[] = [];
-    for (let i = 0; i < 24; i++) {
-      const h = (startH + i) % 24;
-      hours.push(`${String(h).padStart(2, '0')}:30`);
-    }
-    return hours;
-  }, [dayReset]);
-
-  // Calculate timeline segments for the bar (Active: Green, Idle: Red, Break: Black, Manual: Amber)
-  const timelineSegments = useMemo(() => {
-    const [startH, startM] = dayReset.split(':').map(Number);
-    const cycleStart = new Date(`${selectedDate}T00:00:00`);
-    cycleStart.setHours(startH, startM, 0, 0);
-    const cycleStartMs = cycleStart.getTime();
-    const cycleDurationMs = 24 * 60 * 60 * 1000;
-
-    const segments: Array<{
-      id: string;
-      sessionId: string;
-      left: number;
-      width: number;
-      color: string;
-      label: string;
-      startTime: string;
-      endTime: string;
-      project: string;
-      task: string;
-    }> = [];
-
-    const sortedChronoSessions = [...sessions].sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    sortedChronoSessions.forEach((sess, sIdx) => {
-      const sessStartMs = Math.max(sess.start.getTime(), cycleStartMs);
-      const sessEndMs = Math.min(sess.end.getTime(), cycleStartMs + cycleDurationMs);
-      if (sessEndMs <= sessStartMs) return;
-
-      const totalSessDurationMs = sessEndMs - sessStartMs;
-      const breakMs = (Number(sess.entry?.breakSeconds) || 0) * 1000;
-      const idleMs = (Number(sess.entry?.idleSeconds) || 0) * 1000;
-
-      // If session has screenshots, partition the timeline ruler into fine-grained segments:
-      if (sess.screenshots && sess.screenshots.length > 0) {
-        const sorted = [...sess.screenshots].sort(
-          (a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime()
-        );
-
-        let hasIdleScreenshot = false;
-        let hasBreakScreenshot = false;
-
-        sorted.forEach((sc, idx) => {
-          const scTime = new Date(sc.capturedAt).getTime();
-          if (scTime < cycleStartMs || scTime > cycleStartMs + cycleDurationMs) return;
-
-          // Slices around screenshot
-          const sliceStart = idx === 0 
-            ? sessStartMs 
-            : Math.max(sessStartMs, (scTime + new Date(sorted[idx - 1].capturedAt).getTime()) / 2);
-          const sliceEnd = idx === sorted.length - 1 
-            ? sessEndMs 
-            : Math.min(sessEndMs, (scTime + new Date(sorted[idx + 1].capturedAt).getTime()) / 2);
-
-          if (sliceEnd <= sliceStart) return;
-
-          const leftPercent = ((sliceStart - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max(((sliceEnd - sliceStart) / cycleDurationMs) * 100, 0.4);
-
-          // Active work person served: Green (#10B981)
-          // Idle time: Red (#EF4444)
-          // Break time: Black (#0F172A)
-          // Manual: Amber (#F59E0B)
-          let color = '#10B981'; // Green (Active Work)
-          let label = `Active (${sc.activityScore || 85}%)`;
-
-          if (sess.entry?.isManualEdit) {
-            color = '#F59E0B'; // Manual
-            label = 'Manual';
-          } else if (sc.isOnBreak) {
-            color = '#0F172A'; // Black (Break)
-            label = 'Break';
-            hasBreakScreenshot = true;
-          } else if (sc.activityScore !== undefined && sc.activityScore < 30) {
-            color = '#EF4444'; // Red (Idle)
-            label = `Idle (${sc.activityScore}%)`;
-            hasIdleScreenshot = true;
-          }
-
-          segments.push({
-            id: `${sess.id}-sc-${sc._id || idx}`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color,
-            label,
-            startTime: new Date(sliceStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(sliceEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: sess.task,
-          });
-        });
-
-        // If session has recorded idle time not already marked by a screenshot
-        if (idleMs > 0 && !hasIdleScreenshot) {
-          const idleSliceStart = Math.max(sessStartMs, sessEndMs - idleMs);
-          const leftPercent = ((idleSliceStart - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max((idleMs / cycleDurationMs) * 100, 0.6);
-          segments.push({
-            id: `${sess.id}-idle-segment`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color: '#EF4444', // Red (Idle)
-            label: `Idle (${Math.round(idleMs / 60000)}m)`,
-            startTime: new Date(idleSliceStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: 'Idle / Inactive',
-          });
-        }
-
-        // If explicit break time is recorded for the session
-        if (breakMs > 0 && !hasBreakScreenshot) {
-          const breakStart = Math.max(sessStartMs, sessEndMs - breakMs);
-          const leftPercent = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max((breakMs / cycleDurationMs) * 100, 0.5);
-          segments.push({
-            id: `${sess.id}-break`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color: '#0F172A', // Black (Break)
-            label: `Break (${Math.round(sess.entry.breakSeconds / 60)}m)`,
-            startTime: new Date(breakStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: 'Break Period',
-          });
-        }
-      } else {
-        // Fallback for sessions without captures
-        const netActiveMs = Math.max(0, totalSessDurationMs - idleMs - breakMs);
-
-        // Active segment
-        if (netActiveMs > 0) {
-          const leftPercent = ((sessStartMs - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max((netActiveMs / cycleDurationMs) * 100, 0.6);
-          segments.push({
-            id: `${sess.id}-act`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color: sess.entry?.isManualEdit ? '#F59E0B' : '#10B981',
-            label: sess.entry?.isManualEdit ? 'Manual' : 'Active Work',
-            startTime: new Date(sessStartMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(sessStartMs + netActiveMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: sess.task,
-          });
-        }
-
-        // Idle segment (Red)
-        if (idleMs > 0) {
-          const idleStart = sessStartMs + netActiveMs;
-          const leftPercent = ((idleStart - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max((idleMs / cycleDurationMs) * 100, 0.6);
-          segments.push({
-            id: `${sess.id}-idle`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color: '#EF4444', // Red
-            label: `Idle (${Math.round(idleMs / 60000)}m)`,
-            startTime: new Date(idleStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(idleStart + idleMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: 'Idle / Inactive',
-          });
-        }
-
-        // Break segment (Black)
-        if (breakMs > 0) {
-          const breakStart = sessEndMs - breakMs;
-          const leftPercent = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
-          const widthPercent = Math.max((breakMs / cycleDurationMs) * 100, 0.6);
-          segments.push({
-            id: `${sess.id}-brk`,
-            sessionId: sess.id,
-            left: leftPercent,
-            width: widthPercent,
-            color: '#0F172A', // Black
-            label: `Break (${Math.round(breakMs / 60000)}m)`,
-            startTime: new Date(breakStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            project: sess.project,
-            task: 'Break Period',
-          });
-        }
-      }
-
-      // Stopped / Off-Duty period between sessions or after latest session
-      const nextSess = sortedChronoSessions[sIdx + 1];
-      const gapStartMs = sessEndMs;
-      const gapEndMs = nextSess 
-        ? Math.max(gapStartMs, nextSess.start.getTime())
-        : (new Date().toISOString().split('T')[0] === selectedDate ? Math.min(Date.now(), cycleStartMs + cycleDurationMs) : null);
-
-      if (gapEndMs && gapEndMs - gapStartMs >= 60000) {
-        const leftPercent = ((gapStartMs - cycleStartMs) / cycleDurationMs) * 100;
-        const widthPercent = Math.max(((gapEndMs - gapStartMs) / cycleDurationMs) * 100, 0.6);
-        segments.push({
-          id: `stopped-${sess.id}-${gapStartMs}`,
-          sessionId: 'stopped',
-          left: leftPercent,
-          width: widthPercent,
-          color: '#0F172A', // Black (Stopped from app)
-          label: 'Stopped (Timer Off)',
-          startTime: new Date(gapStartMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          endTime: new Date(gapEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          project: 'Agent App',
-          task: 'Timer Stopped / Inactive',
-        });
-      }
-    });
-
-    return segments;
-  }, [sessions, selectedDate, dayReset]);
-
   // Lightbox helpers
   const handleOpenZoom = (screenshot: any, sessionScreenshots: any[]) => {
     setActiveScreenshotList(sessionScreenshots);
@@ -729,112 +501,47 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
             </div>
           </div>
 
-          {/* Legend and Toggle */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs">
-            {/* Legend chips */}
-            <div className="flex flex-wrap items-center gap-3.5 font-bold text-neu-secondary text-xs">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" /> Active (Work)
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle Time
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] border border-white/30 shadow-[0_0_8px_rgba(15,23,42,0.7)]" /> Break / Stopped Time
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" /> Manual
-              </span>
-            </div>
-
-            {/* Timeline / Table View segmented control */}
-            <div className="inline-flex p-1 neu-inset rounded-xl gap-1">
-              <button
-                type="button"
-                onClick={() => setViewMode('timeline')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
-                  viewMode === 'timeline'
-                    ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
-                    : 'bg-transparent text-neu-muted hover:text-neu-primary'
-                }`}
-              >
-                <Layers size={13} />
-                <span>Timeline</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
-                  viewMode === 'table'
-                    ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
-                    : 'bg-transparent text-neu-muted hover:text-neu-primary'
-                }`}
-              >
-                <TableIcon size={13} />
-                <span>Table</span>
-              </button>
-            </div>
+          {/* Timeline / Table View segmented control */}
+          <div className="inline-flex p-1 neu-inset rounded-xl gap-1 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setViewMode('timeline')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
+                viewMode === 'timeline'
+                  ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
+                  : 'bg-transparent text-neu-muted hover:text-neu-primary'
+              }`}
+            >
+              <Layers size={13} />
+              <span>Timeline</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer border-none ${
+                viewMode === 'table'
+                  ? 'neu-raised text-indigo-600 dark:text-indigo-400 shadow-neu-raised-sm'
+                  : 'bg-transparent text-neu-muted hover:text-neu-primary'
+              }`}
+            >
+              <TableIcon size={13} />
+              <span>Table</span>
+            </button>
           </div>
         </div>
 
         {/* 24-Hour Timeline Bar & Ruler */}
-        {viewMode === 'timeline' && (
-          <div className="pt-2">
-            <div className="relative w-full overflow-x-auto pb-2 scrollbar-thin">
-              <div className="min-w-[960px]">
-                {/* Hourly labels */}
-                <div className="grid grid-cols-24 text-[10px] text-neu-muted font-mono mb-1.5 text-center select-none tabular-nums">
-                  {timelineHours.map((hr, idx) => (
-                    <div key={idx} className="truncate">
-                      {hr}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Ruler tick marks */}
-                <div className="grid grid-cols-24 h-2 border-b border-white/10 dark:border-white/5 mb-2">
-                  {timelineHours.map((_, idx) => (
-                    <div key={idx} className="border-l border-white/10 dark:border-white/5 h-full" />
-                  ))}
-                </div>
-
-                {/* Timeline activity track */}
-                <div className="relative h-10 w-full neu-inset rounded-xl overflow-hidden">
-                  {/* Grid hour guidelines */}
-                  <div className="absolute inset-0 grid grid-cols-24 pointer-events-none opacity-15">
-                    {timelineHours.map((_, idx) => (
-                      <div key={idx} className="border-r border-slate-400 h-full" />
-                    ))}
-                  </div>
-
-                  {timelineSegments.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-xs text-neu-muted font-bold gap-2">
-                      <Clock size={14} className="opacity-60" />
-                      <span>No activity recorded in this 24-hour cycle</span>
-                    </div>
-                  ) : (
-                    timelineSegments.map((seg: any) => (
-                      <div
-                        key={seg.id}
-                        style={{
-                          left: `${seg.left}%`,
-                          width: `${seg.width}%`,
-                          backgroundColor: seg.color,
-                        }}
-                        title={`${seg.startTime} → ${seg.endTime} (${seg.label}) - ${seg.project}: ${seg.task}`}
-                        className="absolute top-1.5 bottom-1.5 rounded-lg cursor-pointer hover:brightness-110 hover:shadow-md transition-all"
-                        onClick={() => {
-                          const el = document.getElementById(`session-${seg.id}`);
-                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {viewMode === 'timeline' ? (
+          <ActivityTimelineRuler
+            userId={selectedUser !== 'all' ? selectedUser : undefined}
+            dateStr={selectedDate}
+            dayReset={dayReset}
+            fallbackTimeEntries={timeEntries}
+            className="border-none shadow-none bg-transparent p-0"
+            title=""
+            subtitle=""
+          />
+        ) : null}
 
         {/* Table View of Sessions */}
         {viewMode === 'table' && (
