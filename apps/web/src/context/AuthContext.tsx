@@ -90,36 +90,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               {
                 headers: { Authorization: `Bearer ${storedToken}` },
                 withCredentials: true,
+                timeout: 10000,
               }
             );
             if (meRes.data?.user) {
               fetchedUser = meRes.data.user;
             }
-          } catch {
-            validToken = null;
+          } catch (err: any) {
+            if (err.response?.status === 401) {
+              validToken = null;
+            } else {
+              // If backend is sleeping/cold-starting, preserve stored session so refresh doesn't break
+              try {
+                const storedUser = localStorage.getItem('trackify_user');
+                if (storedUser) {
+                  fetchedUser = JSON.parse(storedUser);
+                }
+              } catch {
+                validToken = null;
+              }
+            }
           }
         }
 
-        if (!fetchedUser) {
-          // Attempt refresh via cookie
-          const res = await axios.post(
-            `${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`,
-            {},
-            { withCredentials: true }
-          );
-
-          if (res.data?.accessToken) {
-            validToken = res.data.accessToken;
-            const meRes = await axios.get(
-              `${import.meta.env.VITE_API_URL || ''}/api/auth/me`,
-              {
-                headers: { Authorization: `Bearer ${validToken}` },
-                withCredentials: true,
-              }
+        if (!fetchedUser && !validToken) {
+          // Attempt refresh via cookie only if 401 occurred
+          try {
+            const res = await axios.post(
+              `${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`,
+              {},
+              { withCredentials: true, timeout: 10000 }
             );
-            if (meRes.data?.user) {
-              fetchedUser = meRes.data.user;
+
+            if (res.data?.accessToken) {
+              validToken = res.data.accessToken;
+              const meRes = await axios.get(
+                `${import.meta.env.VITE_API_URL || ''}/api/auth/me`,
+                {
+                  headers: { Authorization: `Bearer ${validToken}` },
+                  withCredentials: true,
+                  timeout: 10000,
+                }
+              );
+              if (meRes.data?.user) {
+                fetchedUser = meRes.data.user;
+              }
             }
+          } catch {
+            validToken = null;
           }
         }
 

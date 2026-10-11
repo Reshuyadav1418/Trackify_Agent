@@ -48,7 +48,8 @@ html.light {
   --table-row-hover: rgba(255, 255, 255, 0.3);
 }
 
-/* Dark Theme Variables */
+/* Dark Theme Variables (Default) */
+:root,
 :root[data-theme='dark'],
 html.dark {
   --bg: #1E2230;

@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trackify - Time & Productivity Platform</title>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('trackify_theme') || 'dark';
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.backgroundColor = theme === 'light' ? '#E6EAF2' : '#1E2230';
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #1E2230;
+      }
+      html[data-theme='light'], html.light {
+        background-color: #E6EAF2;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

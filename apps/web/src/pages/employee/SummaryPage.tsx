@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTimeEntriesApi, startTimerApi, stopTimerApi } from '../../api/services';
 import { useAuth } from '../../context/AuthContext';
@@ -506,12 +507,12 @@ export const SummaryPage: React.FC = () => {
                           {user?.name || 'User Account'}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <a
-                            href="/screenshots"
+                          <Link
+                            to="/screenshots"
                             className="text-[11px] font-bold text-neu-accent hover:underline no-underline"
                           >
                             Screenshots
-                          </a>
+                          </Link>
                           <span className="badge-indigo text-[10px] py-0 px-1.5">
                             AUTO
                           </span>

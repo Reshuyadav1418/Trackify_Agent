@@ -89,9 +89,18 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
 
   // Compute 24-hour cycle boundaries from selectedDate + dayReset
   const { startDateISO, endDateISO, displayRangeText } = useMemo(() => {
-    const [resetHour, resetMin] = dayReset.split(':').map(Number);
-    const start = new Date(`${selectedDate}T00:00:00`);
-    start.setHours(resetHour, resetMin, 0, 0);
+    const [resetHour, resetMin] = (dayReset || '04:00').split(':').map(Number);
+    const dateStr = selectedDate || new Date().toISOString().split('T')[0];
+    const start = new Date(`${dateStr}T00:00:00`);
+    if (isNaN(start.getTime())) {
+      const now = new Date();
+      return {
+        startDateISO: now.toISOString(),
+        endDateISO: now.toISOString(),
+        displayRangeText: '',
+      };
+    }
+    start.setHours(isNaN(resetHour) ? 4 : resetHour, isNaN(resetMin) ? 0 : resetMin, 0, 0);
 
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1000); // 23h 59m 59s later
 
