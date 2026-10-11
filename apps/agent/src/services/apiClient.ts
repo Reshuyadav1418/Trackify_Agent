@@ -68,11 +68,12 @@ export class ApiClient {
     return res.data;
   }
 
-  public async stopTimer(timeEntryId?: string, durationSeconds?: number, breakSeconds?: number) {
+  public async stopTimer(timeEntryId?: string, durationSeconds?: number, breakSeconds?: number, idleSeconds?: number) {
     const res = await this.client.post('/timers/stop', {
       timeEntryId,
       durationSeconds,
       breakSeconds,
+      idleSeconds,
     });
     return res.data;
   }

@@ -51,7 +51,12 @@ export const stopTimer = async (req: Request, res: Response, next: NextFunction)
   try {
     if (!req.user) throw new AppError('Unauthorized', 401);
     const userId = req.user.userId;
-    const { timeEntryId, durationSeconds: clientDurationSeconds, breakSeconds: clientBreakSeconds } = req.body;
+    const {
+      timeEntryId,
+      durationSeconds: clientDurationSeconds,
+      breakSeconds: clientBreakSeconds,
+      idleSeconds: clientIdleSeconds,
+    } = req.body;
 
     let timeEntry;
     if (timeEntryId) {
@@ -77,12 +82,17 @@ export const stopTimer = async (req: Request, res: Response, next: NextFunction)
       ? clientBreakSeconds
       : 0;
 
+    const idleSeconds = (typeof clientIdleSeconds === 'number' && clientIdleSeconds >= 0)
+      ? clientIdleSeconds
+      : 0;
+
     // Stale-timer guard: flag timers running more than 12 hours (43200 seconds)
     const isStale = rawElapsed > 43200;
 
     timeEntry.end = stopTime;
     timeEntry.durationSeconds = finalDuration;
     timeEntry.breakSeconds = breakSeconds;
+    timeEntry.idleSeconds = idleSeconds;
     timeEntry.isStale = isStale;
 
     await timeEntry.save();

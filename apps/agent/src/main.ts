@@ -228,7 +228,7 @@ function handlePauseBreak(isAuto: boolean = false) {
       const activeWorkSec = Math.max(0, elapsedSec - timeoutSec);
       accumulatedWorkedSeconds += activeWorkSec;
       totalIdleSecondsToday += timeoutSec;
-      console.log(`[Main] Auto-Break applied (10s inactivity). Deducted: ${timeoutSec}s. Banked active work: ${accumulatedWorkedSeconds}s`);
+      console.log(`[Main] Auto-Break applied (10s inactivity). Deducted: ${timeoutSec}s. Banked active work: ${accumulatedWorkedSeconds}s. Idle today: ${totalIdleSecondsToday}s`);
     } else {
       accumulatedWorkedSeconds += elapsedSec;
       console.log(`[Main] Manual break taken. Banked active work: ${accumulatedWorkedSeconds}s`);
@@ -267,7 +267,10 @@ function handleResumeBreak() {
 
   if (breakStartTime) {
     const breakDuration = Math.max(0, Math.floor((Date.now() - breakStartTime) / 1000));
-    totalBreakSecondsToday += breakDuration;
+    if (!isAutoIdle) {
+      // Manual break only; auto-idle time is accumulated in totalIdleSecondsToday
+      totalBreakSecondsToday += breakDuration;
+    }
     breakStartTime = null;
   }
 
@@ -306,10 +309,13 @@ async function handleStopTracking(resetDaily = false) {
   }
 
   let sessionBreakSeconds = totalBreakSecondsToday;
+  let sessionIdleSeconds = totalIdleSecondsToday;
   if (isOnBreak && breakStartTime) {
     const breakSec = Math.max(0, Math.floor((now - breakStartTime) / 1000));
-    totalBreakSecondsToday += breakSec;
-    sessionBreakSeconds = totalBreakSecondsToday;
+    if (!isAutoIdle) {
+      totalBreakSecondsToday += breakSec;
+      sessionBreakSeconds = totalBreakSecondsToday;
+    }
   }
 
   // Save the work session entry
@@ -320,12 +326,12 @@ async function handleStopTracking(resetDaily = false) {
     const pId = activeProject?._id || activeProject?.id || null;
     const tId = activeTask?._id || activeTask?.id || null;
 
-    console.log(`[Main] Saving time entry: ${sessionActiveSeconds}s active, ${sessionBreakSeconds}s break...`);
+    console.log(`[Main] Saving time entry: ${sessionActiveSeconds}s active, ${sessionBreakSeconds}s break, ${sessionIdleSeconds}s idle...`);
 
     // Try stopping server timer online
     let synced = false;
     try {
-      await apiClient.stopTimer(entryId, sessionActiveSeconds, sessionBreakSeconds);
+      await apiClient.stopTimer(entryId, sessionActiveSeconds, sessionBreakSeconds, sessionIdleSeconds);
       synced = true;
       console.log('[Main] Server timer stopped and confirmed successfully.');
     } catch (err: any) {
@@ -343,6 +349,7 @@ async function handleStopTracking(resetDaily = false) {
       end: endIso,
       durationSeconds: sessionActiveSeconds,
       breakSeconds: sessionBreakSeconds,
+      idleSeconds: sessionIdleSeconds,
       isSync: synced, // isSync: true if online call succeeded, false if offline
       createdAt: new Date().toISOString(),
       syncedAt: synced ? new Date().toISOString() : null,
@@ -419,7 +426,7 @@ function scheduleNextScreenshot(isInitial = false) {
     if (isTracking && !isOnBreak) {
       try {
         const isBlur = Boolean(activePolicy?.isBlurEnabled);
-        await screenshotService.captureAndUpload(isBlur);
+        await screenshotService.captureAndUpload(isBlur, isAutoIdle);
         const timeStr = new Date().toLocaleTimeString();
         console.log(`[Main] 📸 Screenshot captured at ${timeStr}`);
 
@@ -528,6 +535,9 @@ function setupPowerMonitor() {
       if (idleSec < 2) {
         console.log(`[Main] User activity detected after auto-break (${idleSec}s idle). Resuming tracking as normal.`);
         handleResumeBreak();
+      } else {
+        totalIdleSecondsToday += 1;
+        notifyStatusChange();
       }
     } else {
       if (idleWarningActive) {

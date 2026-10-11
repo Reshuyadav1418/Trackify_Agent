@@ -20,6 +20,7 @@ import {
   Coffee,
   Briefcase,
   Users,
+  Activity,
 } from 'lucide-react';
 
 export const SummaryPage: React.FC = () => {
@@ -103,6 +104,125 @@ export const SummaryPage: React.FC = () => {
     return `${fmt(minStart)} ➔ ${fmt(maxEnd)}`;
   }, [entries]);
 
+  // Timeline ruler hourly tick marks (24 hours starting from dayReset)
+  const timelineHours = useMemo(() => {
+    const [startH] = (dayReset || '04:00').split(':').map(Number);
+    const hours: string[] = [];
+    for (let i = 0; i < 24; i++) {
+      const h = ((isNaN(startH) ? 4 : startH) + i) % 24;
+      hours.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    return hours;
+  }, [dayReset]);
+
+  // Timeline segments (Active: Green, Idle: Red, Stopped/Break: Black, Manual: Amber)
+  const timelineSegments = useMemo(() => {
+    const [startH, startM] = (dayReset || '04:00').split(':').map(Number);
+    const dateStr = startDate || new Date().toISOString().split('T')[0];
+    const cycleStart = new Date(`${dateStr}T00:00:00`);
+    if (isNaN(cycleStart.getTime())) return [];
+    cycleStart.setHours(isNaN(startH) ? 4 : startH, isNaN(startM) ? 0 : startM, 0, 0);
+    const cycleStartMs = cycleStart.getTime();
+    const cycleDurationMs = 24 * 60 * 60 * 1000;
+
+    const segments: Array<{
+      id: string;
+      left: number;
+      width: number;
+      color: string;
+      label: string;
+      startTime: string;
+      endTime: string;
+    }> = [];
+
+    const sortedEntries = [...entries].sort(
+      (a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
+
+    sortedEntries.forEach((entry: any, idx: number) => {
+      const sMs = new Date(entry.start).getTime();
+      const eMs = entry.end ? new Date(entry.end).getTime() : Date.now();
+      const sessStartMs = Math.max(sMs, cycleStartMs);
+      const sessEndMs = Math.min(eMs, cycleStartMs + cycleDurationMs);
+      if (sessEndMs <= sessStartMs) return;
+
+      const durMs = sessEndMs - sessStartMs;
+      const idleMs = (Number(entry.idleSeconds) || 0) * 1000;
+      const breakMs = (Number(entry.breakSeconds) || 0) * 1000;
+      const netActiveMs = Math.max(0, durMs - idleMs - breakMs);
+
+      // Active Work segment (Green)
+      if (netActiveMs > 0) {
+        const left = ((sessStartMs - cycleStartMs) / cycleDurationMs) * 100;
+        const width = Math.max((netActiveMs / cycleDurationMs) * 100, 0.5);
+        segments.push({
+          id: `${entry._id || idx}-active`,
+          left,
+          width,
+          color: entry.isManualEdit ? '#F59E0B' : '#10B981',
+          label: entry.isManualEdit ? 'Manual' : 'Active Work',
+          startTime: new Date(sessStartMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(sessStartMs + netActiveMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
+
+      // Idle segment (Red)
+      if (idleMs > 0) {
+        const idleStart = sessStartMs + netActiveMs;
+        const left = ((idleStart - cycleStartMs) / cycleDurationMs) * 100;
+        const width = Math.max((idleMs / cycleDurationMs) * 100, 0.5);
+        segments.push({
+          id: `${entry._id || idx}-idle`,
+          left,
+          width,
+          color: '#EF4444',
+          label: `Idle (${Math.round(idleMs / 60000)}m)`,
+          startTime: new Date(idleStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(idleStart + idleMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
+
+      // Break segment (Black)
+      if (breakMs > 0) {
+        const breakStart = sessEndMs - breakMs;
+        const left = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
+        const width = Math.max((breakMs / cycleDurationMs) * 100, 0.5);
+        segments.push({
+          id: `${entry._id || idx}-break`,
+          left,
+          width,
+          color: '#0F172A',
+          label: `Break (${Math.round(breakMs / 60000)}m)`,
+          startTime: new Date(breakStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
+
+      // Stopped period between sessions or after latest session
+      const next = sortedEntries[idx + 1];
+      const gapStart = sessEndMs;
+      const gapEnd = next 
+        ? Math.max(gapStart, new Date(next.start).getTime())
+        : (new Date().toISOString().split('T')[0] === dateStr ? Math.min(Date.now(), cycleStartMs + cycleDurationMs) : null);
+
+      if (gapEnd && gapEnd - gapStart >= 60000) {
+        const left = ((gapStart - cycleStartMs) / cycleDurationMs) * 100;
+        const width = Math.max(((gapEnd - gapStart) / cycleDurationMs) * 100, 0.5);
+        segments.push({
+          id: `stopped-${entry._id || idx}`,
+          left,
+          width,
+          color: '#0F172A',
+          label: 'Stopped (Timer Off)',
+          startTime: new Date(gapStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(gapEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
+    });
+
+    return segments;
+  }, [entries, startDate, dayReset]);
+
   if (isLoading) return <LoadingSpinner label="Loading employee summary report..." />;
   if (isError) return <ErrorAlert message={(error as any)?.message || 'Failed to load time entries'} onRetry={refetch} />;
 
@@ -129,6 +249,15 @@ export const SummaryPage: React.FC = () => {
 
   const activePercent = totalWorkedSeconds > 0
     ? Math.min(100, Math.max(0, Math.round(((totalWorkedSeconds - idleSecondsTotal) / totalWorkedSeconds) * 100)))
+    : 0;
+
+  const idlePercent = totalWorkedSeconds > 0
+    ? Math.min(100, Math.max(0, Math.round((idleSecondsTotal / totalWorkedSeconds) * 100)))
+    : 0;
+
+  const totalCycleSeconds = totalWorkedSeconds + breakSecondsTotal;
+  const breakPercent = totalCycleSeconds > 0
+    ? Math.min(100, Math.max(0, Math.round((breakSecondsTotal / totalCycleSeconds) * 100)))
     : 0;
 
   const formatHours = (seconds: number) => {
@@ -384,6 +513,90 @@ export const SummaryPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ─── Activity Timeline Card ─── */}
+      <div className="card-panel space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 neu-inset-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <Activity size={19} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-neu-primary leading-tight m-0">Activity Timeline</h2>
+              <p className="text-xs text-neu-muted m-0 font-medium">24-hour employee productivity and work status ruler</p>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-3.5 font-bold text-neu-secondary text-xs">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" /> Active (Work)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle Time
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] border border-white/30 shadow-[0_0_8px_rgba(15,23,42,0.7)]" /> Break / Stopped Time
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" /> Manual
+            </span>
+          </div>
+        </div>
+
+        {/* 24-Hour Timeline Bar & Ruler */}
+        <div className="pt-2">
+          <div className="relative w-full overflow-x-auto pb-2 scrollbar-thin">
+            <div className="min-w-[960px]">
+              {/* Hourly labels */}
+              <div className="grid grid-cols-24 text-[10px] text-neu-muted font-mono mb-1.5 text-center select-none tabular-nums">
+                {timelineHours.map((hr, idx) => (
+                  <div key={idx} className="truncate">
+                    {hr}
+                  </div>
+                ))}
+              </div>
+
+              {/* Ruler tick marks */}
+              <div className="grid grid-cols-24 h-2 border-b border-white/10 dark:border-white/5 mb-2">
+                {timelineHours.map((_, idx) => (
+                  <div key={idx} className="border-l border-white/10 dark:border-white/5 h-full" />
+                ))}
+              </div>
+
+              {/* Timeline activity track */}
+              <div className="relative h-10 w-full neu-inset rounded-xl overflow-hidden">
+                {/* Grid hour guidelines */}
+                <div className="absolute inset-0 grid grid-cols-24 pointer-events-none opacity-15">
+                  {timelineHours.map((_, idx) => (
+                    <div key={idx} className="border-r border-slate-400 h-full" />
+                  ))}
+                </div>
+
+                {timelineSegments.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-neu-muted font-bold gap-2">
+                    <Clock size={14} className="opacity-60" />
+                    <span>No activity recorded in this 24-hour cycle</span>
+                  </div>
+                ) : (
+                  timelineSegments.map((seg) => (
+                    <div
+                      key={seg.id}
+                      style={{
+                        left: `${seg.left}%`,
+                        width: `${seg.width}%`,
+                        backgroundColor: seg.color,
+                      }}
+                      title={`${seg.startTime} → ${seg.endTime} (${seg.label})`}
+                      className="absolute top-1.5 bottom-1.5 rounded-lg cursor-pointer hover:brightness-110 hover:shadow-md transition-all"
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ─── Main Employee Summary Table Card ─── */}
       <div className="space-y-3">
         {/* Table Toolbar */}
@@ -566,8 +779,14 @@ export const SummaryPage: React.FC = () => {
                   <td>
                     <div className="flex items-center gap-3">
                       <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">{activePercent}%</span>
-                      <div className="w-24 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5">
-                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${activePercent}%` }} />
+                      <div className="w-28 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5 flex" title={`Active: ${activePercent}% | Idle: ${idlePercent}% | Break: ${breakPercent}%`}>
+                        <div className="h-full bg-emerald-500 rounded-l-full transition-all" style={{ width: `${activePercent}%` }} />
+                        {idlePercent > 0 && (
+                          <div className="h-full bg-rose-500 transition-all" style={{ width: `${idlePercent}%` }} />
+                        )}
+                        {breakPercent > 0 && (
+                          <div className="h-full bg-[#0F172A] rounded-r-full transition-all" style={{ width: `${breakPercent}%` }} />
+                        )}
                       </div>
                     </div>
                   </td>
@@ -575,9 +794,15 @@ export const SummaryPage: React.FC = () => {
                   {/* % Active Sec */}
                   <td>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">42%</span>
-                      <div className="w-24 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5">
-                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '42%' }} />
+                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">{Math.round(activePercent * 0.95)}%</span>
+                      <div className="w-28 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5 flex" title={`Active: ${Math.round(activePercent * 0.95)}% | Idle: ${idlePercent}% | Break: ${breakPercent}%`}>
+                        <div className="h-full bg-emerald-500 rounded-l-full transition-all" style={{ width: `${Math.round(activePercent * 0.95)}%` }} />
+                        {idlePercent > 0 && (
+                          <div className="h-full bg-rose-500 transition-all" style={{ width: `${idlePercent}%` }} />
+                        )}
+                        {breakPercent > 0 && (
+                          <div className="h-full bg-[#0F172A] rounded-r-full transition-all" style={{ width: `${breakPercent}%` }} />
+                        )}
                       </div>
                     </div>
                   </td>

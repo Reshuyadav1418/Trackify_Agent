@@ -15,9 +15,9 @@ export class ScreenshotService {
   /**
    * Captures real screen pixels, applies optional blur, and uploads directly to MinIO/S3 via presigned PUT URL
    */
-  public async captureAndUpload(isBlurEnabled: boolean = false): Promise<any> {
+  public async captureAndUpload(isBlurEnabled: boolean = false, isIdle: boolean = false): Promise<any> {
     try {
-      console.log('[ScreenshotService] Capturing desktop screen...');
+      console.log(`[ScreenshotService] Capturing desktop screen (isIdle: ${isIdle})...`);
       let jpegBuffer = await this.captureScreenBuffer();
 
       if (!jpegBuffer || jpegBuffer.length === 0) {
@@ -42,12 +42,14 @@ export class ScreenshotService {
         fs.writeFileSync(path.join(cacheDir, 'last_capture.jpg'), jpegBuffer);
       } catch (_) {}
 
-      console.log(`[ScreenshotService] Uploading screenshot (${jpegBuffer.length} bytes) to API...`);
+      const activityScore = isIdle ? 0 : 85;
+
+      console.log(`[ScreenshotService] Uploading screenshot (${jpegBuffer.length} bytes, activity: ${activityScore}%) to API...`);
       try {
         const res = await apiClient.uploadScreenshotDirect(
           jpegBuffer,
           new Date().toISOString(),
-          85,
+          activityScore,
           isBlurEnabled
         );
         console.log('[ScreenshotService] Screenshot saved successfully:', res.screenshot?._id);
@@ -68,7 +70,7 @@ export class ScreenshotService {
             id: offlineId,
             filePath,
             capturedAt: new Date().toISOString(),
-            activityScore: 85,
+            activityScore,
             isBlurred: isBlurEnabled,
             isSync: false,
           });

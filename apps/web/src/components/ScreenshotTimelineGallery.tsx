@@ -291,19 +291,25 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
       task: string;
     }> = [];
 
-    sessions.forEach((sess) => {
+    const sortedChronoSessions = [...sessions].sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    sortedChronoSessions.forEach((sess, sIdx) => {
       const sessStartMs = Math.max(sess.start.getTime(), cycleStartMs);
       const sessEndMs = Math.min(sess.end.getTime(), cycleStartMs + cycleDurationMs);
       if (sessEndMs <= sessStartMs) return;
 
       const totalSessDurationMs = sessEndMs - sessStartMs;
-      const breakMs = (sess.entry?.breakSeconds || 0) * 1000;
+      const breakMs = (Number(sess.entry?.breakSeconds) || 0) * 1000;
+      const idleMs = (Number(sess.entry?.idleSeconds) || 0) * 1000;
 
       // If session has screenshots, partition the timeline ruler into fine-grained segments:
       if (sess.screenshots && sess.screenshots.length > 0) {
         const sorted = [...sess.screenshots].sort(
           (a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime()
         );
+
+        let hasIdleScreenshot = false;
+        let hasBreakScreenshot = false;
 
         sorted.forEach((sc, idx) => {
           const scTime = new Date(sc.capturedAt).getTime();
@@ -335,9 +341,11 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
           } else if (sc.isOnBreak) {
             color = '#0F172A'; // Black (Break)
             label = 'Break';
+            hasBreakScreenshot = true;
           } else if (sc.activityScore !== undefined && sc.activityScore < 30) {
             color = '#EF4444'; // Red (Idle)
             label = `Idle (${sc.activityScore}%)`;
+            hasIdleScreenshot = true;
           }
 
           segments.push({
@@ -354,8 +362,27 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
           });
         });
 
+        // If session has recorded idle time not already marked by a screenshot
+        if (idleMs > 0 && !hasIdleScreenshot) {
+          const idleSliceStart = Math.max(sessStartMs, sessEndMs - idleMs);
+          const leftPercent = ((idleSliceStart - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max((idleMs / cycleDurationMs) * 100, 0.6);
+          segments.push({
+            id: `${sess.id}-idle-segment`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color: '#EF4444', // Red (Idle)
+            label: `Idle (${Math.round(idleMs / 60000)}m)`,
+            startTime: new Date(idleSliceStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: 'Idle / Inactive',
+          });
+        }
+
         // If explicit break time is recorded for the session
-        if (breakMs > 0 && !sess.screenshots.some(s => s.isOnBreak)) {
+        if (breakMs > 0 && !hasBreakScreenshot) {
           const breakStart = Math.max(sessStartMs, sessEndMs - breakMs);
           const leftPercent = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
           const widthPercent = Math.max((breakMs / cycleDurationMs) * 100, 0.5);
@@ -374,30 +401,86 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
         }
       } else {
         // Fallback for sessions without captures
-        const leftPercent = ((sessStartMs - cycleStartMs) / cycleDurationMs) * 100;
-        const widthPercent = Math.max((totalSessDurationMs / cycleDurationMs) * 100, 0.6);
+        const netActiveMs = Math.max(0, totalSessDurationMs - idleMs - breakMs);
 
-        let color = '#10B981'; // Green
-        let label = 'Active';
-        if (sess.entry?.isManualEdit) {
-          color = '#F59E0B';
-          label = 'Manual';
-        } else if (breakMs > 0 && totalSessDurationMs <= breakMs) {
-          color = '#0F172A';
-          label = 'Break';
+        // Active segment
+        if (netActiveMs > 0) {
+          const leftPercent = ((sessStartMs - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max((netActiveMs / cycleDurationMs) * 100, 0.6);
+          segments.push({
+            id: `${sess.id}-act`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color: sess.entry?.isManualEdit ? '#F59E0B' : '#10B981',
+            label: sess.entry?.isManualEdit ? 'Manual' : 'Active Work',
+            startTime: new Date(sessStartMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(sessStartMs + netActiveMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: sess.task,
+          });
         }
 
+        // Idle segment (Red)
+        if (idleMs > 0) {
+          const idleStart = sessStartMs + netActiveMs;
+          const leftPercent = ((idleStart - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max((idleMs / cycleDurationMs) * 100, 0.6);
+          segments.push({
+            id: `${sess.id}-idle`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color: '#EF4444', // Red
+            label: `Idle (${Math.round(idleMs / 60000)}m)`,
+            startTime: new Date(idleStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(idleStart + idleMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: 'Idle / Inactive',
+          });
+        }
+
+        // Break segment (Black)
+        if (breakMs > 0) {
+          const breakStart = sessEndMs - breakMs;
+          const leftPercent = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max((breakMs / cycleDurationMs) * 100, 0.6);
+          segments.push({
+            id: `${sess.id}-brk`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color: '#0F172A', // Black
+            label: `Break (${Math.round(breakMs / 60000)}m)`,
+            startTime: new Date(breakStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: 'Break Period',
+          });
+        }
+      }
+
+      // Stopped / Off-Duty period between sessions or after latest session
+      const nextSess = sortedChronoSessions[sIdx + 1];
+      const gapStartMs = sessEndMs;
+      const gapEndMs = nextSess 
+        ? Math.max(gapStartMs, nextSess.start.getTime())
+        : (new Date().toISOString().split('T')[0] === selectedDate ? Math.min(Date.now(), cycleStartMs + cycleDurationMs) : null);
+
+      if (gapEndMs && gapEndMs - gapStartMs >= 60000) {
+        const leftPercent = ((gapStartMs - cycleStartMs) / cycleDurationMs) * 100;
+        const widthPercent = Math.max(((gapEndMs - gapStartMs) / cycleDurationMs) * 100, 0.6);
         segments.push({
-          id: sess.id,
-          sessionId: sess.id,
+          id: `stopped-${sess.id}-${gapStartMs}`,
+          sessionId: 'stopped',
           left: leftPercent,
           width: widthPercent,
-          color,
-          label,
-          startTime: sess.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          endTime: sess.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          project: sess.project,
-          task: sess.task,
+          color: '#0F172A', // Black (Stopped from app)
+          label: 'Stopped (Timer Off)',
+          startTime: new Date(gapStartMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(gapEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          project: 'Agent App',
+          task: 'Timer Stopped / Inactive',
         });
       }
     });
@@ -657,7 +740,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle Time
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] border border-white/30 shadow-[0_0_8px_rgba(15,23,42,0.7)]" /> Break Time
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] border border-white/30 shadow-[0_0_8px_rgba(15,23,42,0.7)]" /> Break / Stopped Time
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" /> Manual

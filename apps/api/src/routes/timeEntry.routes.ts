@@ -125,6 +125,7 @@ router.post(
         const start = new Date(item.start);
         const durationSeconds = Number(item.durationSeconds) || 0;
         const breakSeconds = Number(item.breakSeconds) || 0;
+        const idleSeconds = Number(item.idleSeconds) || 0;
         const end = item.end ? new Date(item.end) : new Date(start.getTime() + durationSeconds * 1000);
 
         // Check if entry already exists (within 3s variance for same user)
@@ -136,6 +137,7 @@ router.post(
         if (existing) {
           existing.durationSeconds = durationSeconds;
           existing.breakSeconds = breakSeconds;
+          existing.idleSeconds = idleSeconds;
           existing.end = end;
           if (item.projectId) existing.projectId = item.projectId;
           if (item.taskId) existing.taskId = item.taskId;
@@ -152,6 +154,7 @@ router.post(
             end,
             durationSeconds,
             breakSeconds,
+            idleSeconds,
             isManualEdit: Boolean(item.isManualEdit),
           });
           syncedIds.push(item.id || created._id.toString());

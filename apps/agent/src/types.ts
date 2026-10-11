@@ -59,6 +59,7 @@ export interface OfflineTimeEntry {
   end: string | null;
   durationSeconds: number; // Active work time
   breakSeconds: number; // Break time
+  idleSeconds?: number; // Idle time
   isSync: boolean; // Flag to indicate if synced to server
   createdAt: string;
   syncedAt?: string | null;
