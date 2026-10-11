@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ThemeToggle } from '../context/ThemeContext';
 import {
   Search,
   Clock,
@@ -201,9 +200,6 @@ export const Layout: React.FC = () => {
               <Smartphone size={14} className="text-sky-500" />
               <span>Mobile app</span>
             </button>
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* User Profile */}
             <div className="relative">

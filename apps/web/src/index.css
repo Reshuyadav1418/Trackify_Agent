@@ -6,9 +6,13 @@
    ── NEUMORPHISM (SOFT UI) CORE DESIGN TOKENS ──
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Light Theme Variables */
+/* Light Theme Variables (Permanent Only Theme) */
+:root,
+html,
+html.light,
+html.dark,
 :root[data-theme='light'],
-html.light {
+:root[data-theme='dark'] {
   --bg: #E6EAF2;
   --bg-main: #E6EAF2;
   --bg-topbar: #E6EAF2;
@@ -46,56 +50,11 @@ html.light {
 
   --table-header-bg: #E6EAF2;
   --table-row-hover: rgba(255, 255, 255, 0.3);
-}
 
-/* Dark Theme Variables (Default) */
-:root,
-:root[data-theme='dark'],
-html.dark {
-  --bg: #1E2230;
-  --bg-main: #1E2230;
-  --bg-topbar: #1E2230;
-  --bg-sidebar: #1E2230;
-  --bg-card: #1E2230;
-  --bg-card-subtle: #1E2230;
-  --bg-card-hover: #1E2230;
-  --bg-input: #1E2230;
-  --bg-modal: #1E2230;
-
-  --shadow-light: rgba(60, 68, 92, 0.55);
-  --shadow-dark: rgba(8, 10, 18, 0.75);
-
-  --shadow-raised: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
-  --shadow-raised-hover: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light);
-  --shadow-raised-sm: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
-  --shadow-raised-lg: 14px 14px 28px var(--shadow-dark), -14px -14px 28px var(--shadow-light);
-  --shadow-inset: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
-  --shadow-inset-sm: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-
-  --surface-gradient: linear-gradient(145deg, #212636, #1B1E2B);
-  --surface-flat: #1E2230;
-
-  --border-color: transparent;
-  --border-subtle: transparent;
-
-  --text-primary: #E2E8F0;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-
-  --accent: #5B6CFF;
-  --accent-hover: #7180FF;
-  --accent-glow: 0 0 14px rgba(91, 108, 255, 0.45);
-  --accent-bg-subtle: rgba(91, 108, 255, 0.15);
-
-  --table-header-bg: #1E2230;
-  --table-row-hover: rgba(255, 255, 255, 0.03);
-}
-
-:root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 500;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 *, ::before, ::after {

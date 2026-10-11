@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
-import { ThemeToggle } from '../context/ThemeContext';
 
 export const LoginPage: React.FC = () => {
   const { login, user } = useAuth();
@@ -42,9 +41,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-neu-bg flex items-center justify-center p-6 text-neu-primary relative">
-      <div className="absolute top-6 right-6">
-        <ThemeToggle />
-      </div>
 
       <div className="w-full max-w-md neu-raised-lg p-10 relative">
         <div className="text-center mb-8">

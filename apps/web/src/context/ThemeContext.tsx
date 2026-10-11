@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Sun, Moon } from 'lucide-react';
 
-type Theme = 'dark' | 'light';
+type Theme = 'light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -12,25 +11,17 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('trackify_theme') as Theme;
-    return saved || 'dark';
-  });
+  const [theme] = useState<Theme>('light');
 
   useEffect(() => {
-    localStorage.setItem('trackify_theme', theme);
-    document.documentElement.classList.remove('dark', 'light');
-    document.documentElement.classList.add(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    localStorage.setItem('trackify_theme', 'light');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    document.documentElement.setAttribute('data-theme', 'light');
+  }, []);
 
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-  };
+  const toggleTheme = () => {};
+  const setTheme = () => {};
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
@@ -47,22 +38,6 @@ export const useTheme = () => {
   return context;
 };
 
-export const ThemeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
-  const { theme, toggleTheme } = useTheme();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      type="button"
-      className={`theme-toggle-btn ${className}`}
-      title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-    >
-      {theme === 'dark' ? (
-        <Sun size={18} className="text-amber-400" />
-      ) : (
-        <Moon size={18} className="text-indigo-600" />
-      )}
-      <span className="theme-toggle-text">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-    </button>
-  );
+export const ThemeToggle: React.FC<{ className?: string }> = () => {
+  return null;
 };
