@@ -88,11 +88,23 @@ export const SummaryPage: React.FC = () => {
     },
   });
 
+  const entries = useMemo(() => data?.timeEntries || [], [data?.timeEntries]);
+  const activeEntry = useMemo(() => entries.find((e: any) => !e.end), [entries]);
+
+  // Calculate activity span from earliest to latest time entry
+  const activitySpan = useMemo(() => {
+    if (entries.length === 0) return 'No recorded sessions';
+    const startTimestamps = entries.map((e: any) => new Date(e.start).getTime()).filter((t: number) => !isNaN(t));
+    const endTimestamps = entries.map((e: any) => new Date(e.end || e.start).getTime()).filter((t: number) => !isNaN(t));
+    if (startTimestamps.length === 0) return 'No recorded sessions';
+    const minStart = new Date(Math.min(...startTimestamps));
+    const maxEnd = new Date(Math.max(...endTimestamps));
+    const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${fmt(minStart)} ➔ ${fmt(maxEnd)}`;
+  }, [entries]);
+
   if (isLoading) return <LoadingSpinner label="Loading employee summary report..." />;
   if (isError) return <ErrorAlert message={(error as any)?.message || 'Failed to load time entries'} onRetry={refetch} />;
-
-  const entries = data?.timeEntries || [];
-  const activeEntry = entries.find((e: any) => !e.end);
 
   // Dynamic calculations from actual synced work sessions matching the selected date filter
   let totalWorkedSeconds = 0;
@@ -114,18 +126,6 @@ export const SummaryPage: React.FC = () => {
       timerActiveSeconds += dur;
     }
   });
-
-  // Calculate activity span from earliest to latest time entry
-  const activitySpan = useMemo(() => {
-    if (entries.length === 0) return 'No recorded sessions';
-    const startTimestamps = entries.map((e: any) => new Date(e.start).getTime()).filter((t: number) => !isNaN(t));
-    const endTimestamps = entries.map((e: any) => new Date(e.end || e.start).getTime()).filter((t: number) => !isNaN(t));
-    if (startTimestamps.length === 0) return 'No recorded sessions';
-    const minStart = new Date(Math.min(...startTimestamps));
-    const maxEnd = new Date(Math.max(...endTimestamps));
-    const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    return `${fmt(minStart)} ➔ ${fmt(maxEnd)}`;
-  }, [entries]);
 
   const activePercent = totalWorkedSeconds > 0
     ? Math.min(100, Math.max(0, Math.round(((totalWorkedSeconds - idleSecondsTotal) / totalWorkedSeconds) * 100)))
