@@ -128,10 +128,11 @@ export function buildTimelineSegments(options) {
             // Running / open entry (no end)
             const isOpenEntry = !entry.end;
             if (isOpenEntry) {
-                // Heartbeat Safety: if open and no sample for > 2 minutes, treat as STOPPED
-                const lastActivityMs = latestDataMinuteMs !== null
+                const entryStartMs = new Date(entry.start).getTime();
+                // Heartbeat Safety: if open and no sample for > 2 minutes, treat tail as STOPPED
+                const lastActivityMs = (latestDataMinuteMs !== null && latestDataMinuteMs >= entryStartMs)
                     ? latestDataMinuteMs + 60000
-                    : new Date(entry.start).getTime();
+                    : entryStartMs;
                 const silenceMs = nowMs - lastActivityMs;
                 const isHeartbeatMissing = silenceMs > 2 * 60 * 1000;
                 if (isHeartbeatMissing && m >= lastActivityMs) {

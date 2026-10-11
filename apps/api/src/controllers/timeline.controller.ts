@@ -100,6 +100,8 @@ export const getTimeline = async (req: Request, res: Response, next: NextFunctio
       to: toDate.toISOString(),
       segments,
       timeEntries,
+      activitySamples,
+      screenshots,
       activitySamplesCount: activitySamples.length,
     });
   } catch (error) {

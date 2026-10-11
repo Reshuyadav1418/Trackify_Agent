@@ -102,13 +102,20 @@ export const ActivityTimelineRuler: React.FC<ActivityTimelineRulerProps> = ({
   }, [currentTime, windowStartMs, windowEndMs, windowDurationMs, isToday]);
 
   // Single source of truth segments computation
-  const segments = useMemo(() => {
+  const segments: TimelineSegment[] = useMemo(() => {
     const entries = data?.timeEntries || fallbackTimeEntries;
     const samples = data?.activitySamples || [];
+    const screenshots = data?.screenshots || [];
+
+    // If no samples/screenshots and server provided segments, use server segments directly
+    if (samples.length === 0 && screenshots.length === 0 && data?.segments && data.segments.length > 0) {
+      return data.segments as TimelineSegment[];
+    }
 
     return buildTimelineSegments({
       timeEntries: entries,
       activitySamples: samples,
+      screenshots,
       currentTime,
       dayReset,
       dateStr: activeDateStr,
@@ -118,7 +125,7 @@ export const ActivityTimelineRuler: React.FC<ActivityTimelineRulerProps> = ({
   // Filtered segments if legend item clicked
   const displayedSegments = useMemo(() => {
     if (!statusFilter) return segments;
-    return segments.filter((s) => s.status === statusFilter);
+    return segments.filter((s: TimelineSegment) => s.status === statusFilter);
   }, [segments, statusFilter]);
 
   // Formatter for duration
