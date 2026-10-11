@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
-import { TimeEntryModel, ActivitySampleModel } from '../models';
+import { TimeEntryModel, ActivitySampleModel, ScreenshotModel } from '../models';
 import { AppError } from '../middleware/error.middleware';
 import { buildTimelineSegments } from '@teamlogger/shared';
 
@@ -61,6 +61,12 @@ export const getTimeline = async (req: Request, res: Response, next: NextFunctio
       timestamp: { $gte: fromDate, $lte: toDate },
     }).sort({ timestamp: 1 });
 
+    // Query screenshots in this cycle to ensure complete activity tracking
+    const screenshots = await ScreenshotModel.find({
+      userId: userObjectId,
+      capturedAt: { $gte: fromDate, $lte: toDate },
+    }).sort({ capturedAt: 1 });
+
     // Build single source of truth merged segments
     const segments = buildTimelineSegments({
       timeEntries: timeEntries.map((e) => ({
@@ -76,6 +82,11 @@ export const getTimeline = async (req: Request, res: Response, next: NextFunctio
         minuteBucket: s.minuteBucket,
         timestamp: s.timestamp,
         isIdle: s.isIdle,
+      })),
+      screenshots: screenshots.map((sc) => ({
+        capturedAt: sc.capturedAt,
+        activityScore: sc.activityScore,
+        isOnBreak: (sc as any).isOnBreak,
       })),
       currentTime: new Date(),
       dayReset,

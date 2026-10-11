@@ -15,6 +15,11 @@ export interface RawActivitySample {
     timestamp?: string | Date;
     isIdle?: boolean;
 }
+export interface RawScreenshot {
+    capturedAt: string | Date;
+    activityScore?: number;
+    isOnBreak?: boolean;
+}
 export interface TimelineSegment {
     id: string;
     status: TimelineStatus;
@@ -29,8 +34,9 @@ export interface TimelineSegment {
     endTime: string;
 }
 export interface BuildTimelineOptions {
-    timeEntries: RawTimeEntry[];
+    timeEntries?: RawTimeEntry[];
     activitySamples?: RawActivitySample[];
+    screenshots?: RawScreenshot[];
     currentTime?: Date | string | number;
     dayReset?: string;
     dateStr?: string;

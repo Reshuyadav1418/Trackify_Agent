@@ -18,6 +18,12 @@ export interface RawActivitySample {
   isIdle?: boolean;
 }
 
+export interface RawScreenshot {
+  capturedAt: string | Date;
+  activityScore?: number;
+  isOnBreak?: boolean;
+}
+
 export interface TimelineSegment {
   id: string;
   status: TimelineStatus;
@@ -33,8 +39,9 @@ export interface TimelineSegment {
 }
 
 export interface BuildTimelineOptions {
-  timeEntries: RawTimeEntry[];
+  timeEntries?: RawTimeEntry[];
   activitySamples?: RawActivitySample[];
+  screenshots?: RawScreenshot[];
   currentTime?: Date | string | number;
   dayReset?: string; // '04:00'
   dateStr?: string;  // 'YYYY-MM-DD'
@@ -62,12 +69,13 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
   const {
     timeEntries = [],
     activitySamples = [],
+    screenshots = [],
     currentTime,
     dayReset = '04:00',
     dateStr,
   } = options;
 
-  if (timeEntries.length === 0 && activitySamples.length === 0) {
+  if (timeEntries.length === 0 && activitySamples.length === 0 && screenshots.length === 0) {
     return [];
   }
 
@@ -82,7 +90,6 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
   const baseDateStr =
     dateStr ||
     (() => {
-      // If currentTime is provided, get date string in local or ISO representation
       const y = now.getFullYear();
       const m = String(now.getMonth() + 1).padStart(2, '0');
       const d = String(now.getDate()).padStart(2, '0');
@@ -106,47 +113,71 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
     })
     .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-  if (validEntries.length === 0 && activitySamples.length === 0) {
-    return [];
-  }
-
-  // 2. Index activity samples by minute bucket (minute start in ms)
+  // 2. Index activity samples and screenshots by minute bucket
   const sampleMap = new Map<number, boolean>(); // minuteMs -> isIdle
-  let latestSampleMinuteMs: number | null = null;
+  let earliestDataMinuteMs: number | null = null;
+  let latestDataMinuteMs: number | null = null;
 
   for (const s of activitySamples) {
     const rawTime = s.minuteBucket || s.timestamp;
     if (!rawTime) continue;
     const t = new Date(rawTime).getTime();
-    if (isNaN(t)) continue;
+    if (isNaN(t) || t < windowStartMs || t > windowEndMs) continue;
     const minuteMs = Math.floor(t / 60000) * 60000;
     sampleMap.set(minuteMs, Boolean(s.isIdle));
-    if (latestSampleMinuteMs === null || minuteMs > latestSampleMinuteMs) {
-      latestSampleMinuteMs = minuteMs;
+    if (earliestDataMinuteMs === null || minuteMs < earliestDataMinuteMs) {
+      earliestDataMinuteMs = minuteMs;
+    }
+    if (latestDataMinuteMs === null || minuteMs > latestDataMinuteMs) {
+      latestDataMinuteMs = minuteMs;
     }
   }
 
-  // Determine timeline boundary
-  // Earliest active minute
-  const earliestEntryStartMs = validEntries.length > 0
-    ? Math.max(windowStartMs, new Date(validEntries[0].start).getTime())
-    : (latestSampleMinuteMs ? Math.max(windowStartMs, latestSampleMinuteMs) : windowStartMs);
+  // Also include screenshots as active/idle evidence if not already covered
+  for (const sc of screenshots) {
+    if (!sc.capturedAt) continue;
+    const t = new Date(sc.capturedAt).getTime();
+    if (isNaN(t) || t < windowStartMs || t > windowEndMs) continue;
+    const minuteMs = Math.floor(t / 60000) * 60000;
+    const isIdle = Boolean(sc.isOnBreak) || (sc.activityScore !== undefined && sc.activityScore < 30);
+    if (!sampleMap.has(minuteMs)) {
+      sampleMap.set(minuteMs, isIdle);
+    }
+    if (earliestDataMinuteMs === null || minuteMs < earliestDataMinuteMs) {
+      earliestDataMinuteMs = minuteMs;
+    }
+    if (latestDataMinuteMs === null || minuteMs > latestDataMinuteMs) {
+      latestDataMinuteMs = minuteMs;
+    }
+  }
 
-  const startMinuteMs = Math.floor(earliestEntryStartMs / 60000) * 60000;
+  if (validEntries.length === 0 && sampleMap.size === 0) {
+    return [];
+  }
+
+  // Determine earliest minute on the timeline
+  const candidateStarts: number[] = [];
+  if (validEntries.length > 0) {
+    candidateStarts.push(new Date(validEntries[0].start).getTime());
+  }
+  if (earliestDataMinuteMs !== null) {
+    candidateStarts.push(earliestDataMinuteMs);
+  }
+
+  const earliestStartMs = candidateStarts.length > 0 ? Math.min(...candidateStarts) : windowStartMs;
+  const startMinuteMs = Math.max(windowStartMs, Math.floor(earliestStartMs / 60000) * 60000);
 
   // Upper boundary: cannot exceed window end or future time (nowMs)
   const isPastDay = nowMs >= windowEndMs;
   let maxMinuteMs: number;
 
   if (isPastDay) {
-    // If past day, upper bound is the end of the latest entry or windowEndMs
-    const latestEntryEnd = validEntries.reduce((max, e) => {
-      const end = e.end ? new Date(e.end).getTime() : windowEndMs;
-      return Math.max(max, end);
-    }, windowStartMs);
-    maxMinuteMs = Math.min(windowEndMs, Math.ceil(latestEntryEnd / 60000) * 60000);
+    const latestBound = Math.max(
+      ...validEntries.map((e) => (e.end ? new Date(e.end).getTime() : windowEndMs)),
+      latestDataMinuteMs ? latestDataMinuteMs + 60000 : windowStartMs
+    );
+    maxMinuteMs = Math.min(windowEndMs, Math.ceil(latestBound / 60000) * 60000);
   } else {
-    // If today, upper bound is nowMs (future time stays empty)
     maxMinuteMs = Math.min(windowEndMs, nowMs);
   }
 
@@ -163,8 +194,6 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
   const minuteStatuses: MinuteStatus[] = [];
 
   for (let m = startMinuteMs; m < maxMinuteMs; m += 60000) {
-    const minuteEndMs = m + 60000;
-
     // Check if minute falls inside an entry
     const entry = validEntries.find((e) => {
       const eStart = new Date(e.start).getTime();
@@ -183,8 +212,8 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
       const isOpenEntry = !entry.end;
       if (isOpenEntry) {
         // Heartbeat Safety: if open and no sample for > 2 minutes, treat as STOPPED
-        const lastActivityMs = latestSampleMinuteMs !== null
-          ? latestSampleMinuteMs + 60000
+        const lastActivityMs = latestDataMinuteMs !== null
+          ? latestDataMinuteMs + 60000
           : new Date(entry.start).getTime();
 
         const silenceMs = nowMs - lastActivityMs;
@@ -205,8 +234,15 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
         minuteStatuses.push({ minuteMs: m, status: 'ACTIVE' });
       }
     } else {
-      // Gap between entries or after Stop up to now -> STOPPED (black)
-      minuteStatuses.push({ minuteMs: m, status: 'STOPPED' });
+      // Not inside an explicit TimeEntry record
+      if (sampleMap.has(m)) {
+        // Direct activity sample / screenshot exists for this minute!
+        const isIdle = sampleMap.get(m)!;
+        minuteStatuses.push({ minuteMs: m, status: isIdle ? 'IDLE' : 'ACTIVE' });
+      } else {
+        // Gap between sessions or after Stop up to now -> STOPPED (black)
+        minuteStatuses.push({ minuteMs: m, status: 'STOPPED' });
+      }
     }
   }
 
@@ -247,7 +283,6 @@ export function buildTimelineSegments(options: BuildTimelineOptions): TimelineSe
   return merged.map((seg, idx) => {
     const left = Math.max(0, Math.min(100, ((seg.startMs - windowStartMs) / windowDurationMs) * 100));
     const rawWidth = ((seg.endMs - seg.startMs) / windowDurationMs) * 100;
-    // 1px minimum width (~0.08% of 24h on a 1200px track) so short segments stay visible
     const width = Math.max(0.08, Math.min(100 - left, rawWidth));
 
     const durationMinutes = Math.max(1, Math.round((seg.endMs - seg.startMs) / 60000));

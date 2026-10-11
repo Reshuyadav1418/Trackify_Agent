@@ -642,10 +642,8 @@ function registerIpcHandlers() {
   ipcMain.handle('timer:start', async (_event, { projectId, taskId }) => {
     let serverEntryId: string | undefined;
     try {
-      if (projectId && taskId) {
-        const res = await apiClient.startTimer(projectId, taskId);
-        serverEntryId = res.timeEntry?._id;
-      }
+      const res = await apiClient.startTimer(projectId || undefined, taskId || undefined);
+      serverEntryId = res.timeEntry?._id;
     } catch (err: any) {
       console.warn('[Main] Server timer start offline / error, starting local session:', err?.message);
     }
