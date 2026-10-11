@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTimeEntriesApi, startTimerApi, stopTimerApi } from '../../api/services';
 import { useAuth } from '../../context/AuthContext';
@@ -30,9 +30,38 @@ export const SummaryPage: React.FC = () => {
   const [searchEmployee, setSearchEmployee] = useState('');
   const [formatType, setFormatType] = useState<'hhmm' | 'decimal'>('hhmm');
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['timeEntries'],
-    queryFn: getTimeEntriesApi,
+  // Date filters bound to state
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [rangeType, setRangeType] = useState<'today' | 'week' | 'custom'>('today');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+  const [dayReset, setDayReset] = useState('04:00');
+
+  const handleRangeChange = (val: 'today' | 'week' | 'custom') => {
+    setRangeType(val);
+    if (val === 'today') {
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (val === 'week') {
+      const d = new Date();
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      setStartDate(monday.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    }
+  };
+
+  const queryParams = useMemo(() => {
+    return {
+      startDate: `${startDate}T00:00:00.000Z`,
+      endDate: `${endDate}T23:59:59.999Z`,
+    };
+  }, [startDate, endDate]);
+
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ['timeEntries', queryParams],
+    queryFn: () => getTimeEntriesApi(queryParams),
   });
 
   const startMutation = useMutation({
@@ -64,10 +93,42 @@ export const SummaryPage: React.FC = () => {
   const entries = data?.timeEntries || [];
   const activeEntry = entries.find((e: any) => !e.end);
 
-  // Calculate stats
-  let totalDurationSeconds = entries.reduce((acc: number, e: any) => acc + (e.durationSeconds || 0), 0);
-  let manualEntrySeconds = entries.filter((e: any) => e.isManualEdit).reduce((acc: number, e: any) => acc + (e.durationSeconds || 0), 0);
-  let idleTimeSeconds = 240; // 4 mins sample idle
+  // Dynamic calculations from actual synced work sessions matching the selected date filter
+  let totalWorkedSeconds = 0;
+  let timerActiveSeconds = 0;
+  let manualEntrySeconds = 0;
+  let breakSecondsTotal = 0;
+  let idleSecondsTotal = 0;
+
+  entries.forEach((e: any) => {
+    const dur = Number(e.durationSeconds) || 0;
+    const brk = Number(e.breakSeconds) || 0;
+    const idle = Number(e.idleSeconds) || 0;
+    totalWorkedSeconds += dur;
+    breakSecondsTotal += brk;
+    idleSecondsTotal += idle;
+    if (e.isManualEdit) {
+      manualEntrySeconds += dur;
+    } else {
+      timerActiveSeconds += dur;
+    }
+  });
+
+  // Calculate activity span from earliest to latest time entry
+  const activitySpan = useMemo(() => {
+    if (entries.length === 0) return 'No recorded sessions';
+    const startTimestamps = entries.map((e: any) => new Date(e.start).getTime()).filter((t: number) => !isNaN(t));
+    const endTimestamps = entries.map((e: any) => new Date(e.end || e.start).getTime()).filter((t: number) => !isNaN(t));
+    if (startTimestamps.length === 0) return 'No recorded sessions';
+    const minStart = new Date(Math.min(...startTimestamps));
+    const maxEnd = new Date(Math.max(...endTimestamps));
+    const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${fmt(minStart)} ➔ ${fmt(maxEnd)}`;
+  }, [entries]);
+
+  const activePercent = totalWorkedSeconds > 0
+    ? Math.min(100, Math.max(0, Math.round(((totalWorkedSeconds - idleSecondsTotal) / totalWorkedSeconds) * 100)))
+    : 0;
 
   const formatHours = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -164,36 +225,63 @@ export const SummaryPage: React.FC = () => {
 
           <div>
             <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Range</label>
-            <select className="w-full input-custom py-2">
-              <option>Custom</option>
-              <option>Today</option>
-              <option>This Week</option>
+            <select
+              value={rangeType}
+              onChange={(e) => handleRangeChange(e.target.value as any)}
+              className="w-full input-custom py-2 cursor-pointer font-bold"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
 
           <div>
             <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Start Date</label>
-            <input type="date" defaultValue="2026-09-30" className="w-full input-custom py-2" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setRangeType('custom');
+              }}
+              className="w-full input-custom py-2 text-xs font-bold"
+            />
           </div>
 
           <div>
             <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">End Date</label>
-            <input type="date" defaultValue="2026-09-30" className="w-full input-custom py-2" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setRangeType('custom');
+              }}
+              className="w-full input-custom py-2 text-xs font-bold"
+            />
           </div>
 
           <div>
             <label className="block font-bold text-neu-muted mb-1.5 uppercase tracking-wider text-[11px]">Day Reset</label>
-            <select className="w-full input-custom py-2">
-              <option>04:00 to 03:59 Next day</option>
+            <select
+              value={dayReset}
+              onChange={(e) => setDayReset(e.target.value)}
+              className="w-full input-custom py-2 cursor-pointer"
+            >
+              <option value="04:00">04:00 to 03:59 Next day</option>
+              <option value="00:00">00:00 (Midnight)</option>
+              <option value="06:00">06:00 (Early)</option>
             </select>
           </div>
 
           <div>
             <button
               onClick={() => refetch()}
+              disabled={isFetching}
               className="w-full btn-primary flex items-center justify-center gap-2 py-2"
             >
-              <RotateCw size={14} />
+              <RotateCw size={14} className={isFetching ? 'animate-spin' : ''} />
               <span>Refresh</span>
             </button>
           </div>
@@ -241,7 +329,7 @@ export const SummaryPage: React.FC = () => {
               <Clock size={14} />
             </div>
           </div>
-          <h2 className="text-xl font-black text-neu-accent tabular-nums m-0">{formatHours(totalDurationSeconds)}</h2>
+          <h2 className="text-xl font-black text-neu-accent tabular-nums m-0">{formatHours(totalWorkedSeconds)}</h2>
         </div>
 
         <div className="card-panel !p-4 flex flex-col justify-between">
@@ -251,7 +339,7 @@ export const SummaryPage: React.FC = () => {
               <Play size={14} />
             </div>
           </div>
-          <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums m-0">{formatHours(totalDurationSeconds)}</h2>
+          <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums m-0">{formatHours(timerActiveSeconds)}</h2>
         </div>
 
         <div className="card-panel !p-4 flex flex-col justify-between">
@@ -266,12 +354,12 @@ export const SummaryPage: React.FC = () => {
 
         <div className="card-panel !p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Meeting Hours</span>
+            <span className="text-[10px] font-bold text-neu-muted uppercase tracking-wider">Meeting / Break</span>
             <div className="w-7 h-7 rounded-full neu-inset flex items-center justify-center text-teal-500">
               <Users size={14} />
             </div>
           </div>
-          <h2 className="text-xl font-black text-teal-600 dark:text-teal-400 tabular-nums m-0">0h</h2>
+          <h2 className="text-xl font-black text-teal-600 dark:text-teal-400 tabular-nums m-0">{formatHours(breakSecondsTotal)}</h2>
         </div>
 
         <div className="card-panel !p-4 flex flex-col justify-between">
@@ -281,7 +369,7 @@ export const SummaryPage: React.FC = () => {
               <Coffee size={14} />
             </div>
           </div>
-          <h2 className="text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums m-0">{formatHours(idleTimeSeconds)}</h2>
+          <h2 className="text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums m-0">{formatHours(idleSecondsTotal)}</h2>
         </div>
 
         <div className="card-panel !p-4 flex flex-col justify-between">
@@ -291,7 +379,7 @@ export const SummaryPage: React.FC = () => {
               <User size={14} />
             </div>
           </div>
-          <h2 className="text-xl font-black text-neu-primary tabular-nums m-0">1</h2>
+          <h2 className="text-xl font-black text-neu-primary tabular-nums m-0">{entries.length > 0 ? 1 : 0}</h2>
         </div>
       </div>
 
@@ -363,13 +451,13 @@ export const SummaryPage: React.FC = () => {
                   ['Employee', 'Activity Span', 'Time Worked', 'Timer', 'Meeting Hours', 'Manual Entry', '% Active Minutes', '% Active Sec'],
                   [
                     user?.name || 'User Account',
-                    '09:14 - 16:32',
-                    formatClockTime(totalDurationSeconds),
-                    formatClockTime(totalDurationSeconds),
-                    '00:00',
+                    activitySpan,
+                    formatClockTime(totalWorkedSeconds),
+                    formatClockTime(timerActiveSeconds),
+                    formatClockTime(breakSecondsTotal),
                     formatClockTime(manualEntrySeconds),
-                    '95%',
-                    '42%'
+                    `${activePercent}%`,
+                    `${Math.round(activePercent * 0.95)}%`
                   ]
                 ];
                 const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(e => e.join(',')).join('\n');
@@ -436,33 +524,33 @@ export const SummaryPage: React.FC = () => {
                   <td>
                     <div>
                       <div className="flex items-center gap-1.5 font-semibold text-neu-primary">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span className="font-mono text-xs tabular-nums">09:14</span>
-                        <span className="text-neu-muted font-normal">➔</span>
-                        <span className="font-mono text-xs tabular-nums">16:32</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${entries.length > 0 ? 'bg-emerald-500' : 'bg-neu-muted'}`} />
+                        <span className="font-mono text-xs tabular-nums">{activitySpan}</span>
                       </div>
-                      <p className="text-[11px] text-neu-muted mt-1 m-0">Updated 3 min ago</p>
+                      <p className="text-[11px] text-neu-muted mt-1 m-0">
+                        {entries.length > 0 ? `${entries.length} recorded session${entries.length > 1 ? 's' : ''}` : 'No sessions'}
+                      </p>
                     </div>
                   </td>
 
                   {/* Time Worked */}
                   <td className="text-center">
                     <span className="badge-emerald font-mono font-bold text-xs tabular-nums">
-                      {formatClockTime(totalDurationSeconds)}
+                      {formatClockTime(totalWorkedSeconds)}
                     </span>
                   </td>
 
                   {/* Timer */}
                   <td className="text-center">
                     <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      {formatClockTime(totalDurationSeconds)}
+                      {formatClockTime(timerActiveSeconds)}
                     </span>
                   </td>
 
                   {/* Meeting Hours */}
                   <td className="text-center">
                     <span className="font-mono text-xs text-neu-muted tabular-nums">
-                      00:00
+                      {formatClockTime(breakSecondsTotal)}
                     </span>
                   </td>
 
@@ -476,9 +564,9 @@ export const SummaryPage: React.FC = () => {
                   {/* % Active Minutes */}
                   <td>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">95%</span>
+                      <span className="font-mono font-bold text-xs text-neu-primary w-9 shrink-0 tabular-nums">{activePercent}%</span>
                       <div className="w-24 h-2.5 neu-inset-sm rounded-full overflow-hidden p-0.5">
-                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '95%' }} />
+                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${activePercent}%` }} />
                       </div>
                     </div>
                   </td>

@@ -169,16 +169,19 @@ export const Layout: React.FC = () => {
       {/* Main Content & Top Bar Area */}
       <div className="ml-64 flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-18 sticky top-0 z-30 flex items-center justify-between px-8 bg-neu-bg">
+        <header
+          className="h-18 sticky top-0 z-30 flex items-center justify-between px-8 border-b border-white/10 dark:border-white/5"
+          style={{ backgroundColor: 'var(--bg)' }}
+        >
           {/* Breadcrumbs & Search */}
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-neu-muted">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-neu-muted shrink-0">
               <span>Admin</span>
               <ChevronRight size={13} />
-              <span className="text-neu-primary font-extrabold">{currentNav?.label || 'Overview'}</span>
+              <span className="text-neu-primary font-extrabold truncate max-w-[160px]">{currentNav?.label || 'Overview'}</span>
             </div>
 
-            <div className="relative w-64 md:w-80 flex items-center">
+            <div className="relative w-60 md:w-80 flex items-center shrink-0">
               <Search size={14} className="absolute left-3.5 text-indigo-500 dark:text-indigo-400 pointer-events-none" />
               <input
                 type="text"

@@ -261,7 +261,7 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
     return hours;
   }, [dayReset]);
 
-  // Calculate timeline segments for the bar
+  // Calculate timeline segments for the bar (Active: Green, Idle: Red, Break: Black, Manual: Amber)
   const timelineSegments = useMemo(() => {
     const [startH, startM] = dayReset.split(':').map(Number);
     const cycleStart = new Date(`${selectedDate}T00:00:00`);
@@ -269,43 +269,131 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
     const cycleStartMs = cycleStart.getTime();
     const cycleDurationMs = 24 * 60 * 60 * 1000;
 
-    return sessions.map((sess) => {
-      const startMs = Math.max(sess.start.getTime(), cycleStartMs);
-      const endMs = Math.min(sess.end.getTime(), cycleStartMs + cycleDurationMs);
-      
-      if (endMs <= startMs) return null;
+    const segments: Array<{
+      id: string;
+      sessionId: string;
+      left: number;
+      width: number;
+      color: string;
+      label: string;
+      startTime: string;
+      endTime: string;
+      project: string;
+      task: string;
+    }> = [];
 
-      const leftPercent = ((startMs - cycleStartMs) / cycleDurationMs) * 100;
-      const widthPercent = Math.max(((endMs - startMs) / cycleDurationMs) * 100, 0.6);
+    sessions.forEach((sess) => {
+      const sessStartMs = Math.max(sess.start.getTime(), cycleStartMs);
+      const sessEndMs = Math.min(sess.end.getTime(), cycleStartMs + cycleDurationMs);
+      if (sessEndMs <= sessStartMs) return;
 
-      // Determine segment type (active, meeting, idle, etc.)
-      const isManual = sess.entry?.isManualEdit;
-      const avgActivity = sess.screenshots.length > 0
-        ? sess.screenshots.reduce((acc, s) => acc + (s.activityScore || 0), 0) / sess.screenshots.length
-        : 85;
+      const totalSessDurationMs = sessEndMs - sessStartMs;
+      const breakMs = (sess.entry?.breakSeconds || 0) * 1000;
 
-      let color = '#10B981'; // Active (emerald)
-      let label = 'Active';
-      if (isManual) {
-        color = '#F59E0B'; // Manual (amber)
-        label = 'Manual';
-      } else if (avgActivity < 30) {
-        color = '#EF4444'; // Idle (rose)
-        label = 'Idle';
+      // If session has screenshots, partition the timeline ruler into fine-grained segments:
+      if (sess.screenshots && sess.screenshots.length > 0) {
+        const sorted = [...sess.screenshots].sort(
+          (a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime()
+        );
+
+        sorted.forEach((sc, idx) => {
+          const scTime = new Date(sc.capturedAt).getTime();
+          if (scTime < cycleStartMs || scTime > cycleStartMs + cycleDurationMs) return;
+
+          // Slices around screenshot
+          const sliceStart = idx === 0 
+            ? sessStartMs 
+            : Math.max(sessStartMs, (scTime + new Date(sorted[idx - 1].capturedAt).getTime()) / 2);
+          const sliceEnd = idx === sorted.length - 1 
+            ? sessEndMs 
+            : Math.min(sessEndMs, (scTime + new Date(sorted[idx + 1].capturedAt).getTime()) / 2);
+
+          if (sliceEnd <= sliceStart) return;
+
+          const leftPercent = ((sliceStart - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max(((sliceEnd - sliceStart) / cycleDurationMs) * 100, 0.4);
+
+          // Active work person served: Green (#10B981)
+          // Idle time: Red (#EF4444)
+          // Break time: Black (#0F172A)
+          // Manual: Amber (#F59E0B)
+          let color = '#10B981'; // Green (Active Work)
+          let label = `Active (${sc.activityScore || 85}%)`;
+
+          if (sess.entry?.isManualEdit) {
+            color = '#F59E0B'; // Manual
+            label = 'Manual';
+          } else if (sc.isOnBreak) {
+            color = '#0F172A'; // Black (Break)
+            label = 'Break';
+          } else if (sc.activityScore !== undefined && sc.activityScore < 30) {
+            color = '#EF4444'; // Red (Idle)
+            label = `Idle (${sc.activityScore}%)`;
+          }
+
+          segments.push({
+            id: `${sess.id}-sc-${sc._id || idx}`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color,
+            label,
+            startTime: new Date(sliceStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(sliceEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: sess.task,
+          });
+        });
+
+        // If explicit break time is recorded for the session
+        if (breakMs > 0 && !sess.screenshots.some(s => s.isOnBreak)) {
+          const breakStart = Math.max(sessStartMs, sessEndMs - breakMs);
+          const leftPercent = ((breakStart - cycleStartMs) / cycleDurationMs) * 100;
+          const widthPercent = Math.max((breakMs / cycleDurationMs) * 100, 0.5);
+          segments.push({
+            id: `${sess.id}-break`,
+            sessionId: sess.id,
+            left: leftPercent,
+            width: widthPercent,
+            color: '#0F172A', // Black (Break)
+            label: `Break (${Math.round(sess.entry.breakSeconds / 60)}m)`,
+            startTime: new Date(breakStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: new Date(sessEndMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            project: sess.project,
+            task: 'Break Period',
+          });
+        }
+      } else {
+        // Fallback for sessions without captures
+        const leftPercent = ((sessStartMs - cycleStartMs) / cycleDurationMs) * 100;
+        const widthPercent = Math.max((totalSessDurationMs / cycleDurationMs) * 100, 0.6);
+
+        let color = '#10B981'; // Green
+        let label = 'Active';
+        if (sess.entry?.isManualEdit) {
+          color = '#F59E0B';
+          label = 'Manual';
+        } else if (breakMs > 0 && totalSessDurationMs <= breakMs) {
+          color = '#0F172A';
+          label = 'Break';
+        }
+
+        segments.push({
+          id: sess.id,
+          sessionId: sess.id,
+          left: leftPercent,
+          width: widthPercent,
+          color,
+          label,
+          startTime: sess.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: sess.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          project: sess.project,
+          task: sess.task,
+        });
       }
+    });
 
-      return {
-        id: sess.id,
-        left: leftPercent,
-        width: widthPercent,
-        color,
-        label,
-        startTime: sess.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        endTime: sess.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        project: sess.project,
-        task: sess.task,
-      };
-    }).filter(Boolean);
+    return segments;
   }, [sessions, selectedDate, dayReset]);
 
   // Lightbox helpers
@@ -552,15 +640,15 @@ export const ScreenshotTimelineGallery: React.FC<Props> = ({ forcedUserId }) => 
           {/* Legend and Toggle */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs">
             {/* Legend chips */}
-            <div className="flex flex-wrap items-center gap-3 font-bold text-neu-secondary">
+            <div className="flex flex-wrap items-center gap-3.5 font-bold text-neu-secondary text-xs">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" /> Active
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" /> Active (Work)
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]" /> Meeting
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle Time
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]" /> Idle
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A] border border-white/30 shadow-[0_0_8px_rgba(15,23,42,0.7)]" /> Break Time
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]" /> Manual
