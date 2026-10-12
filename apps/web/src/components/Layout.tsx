@@ -12,6 +12,7 @@ import {
   Users,
   LogOut,
   Smartphone,
+  Monitor,
   ChevronDown,
   FileText,
   Shield,
@@ -192,6 +193,18 @@ export const Layout: React.FC = () => {
 
           {/* Top Right Controls */}
           <div className="flex items-center gap-4">
+            {/* Download Desktop Agent Button */}
+            <a
+              href="https://github.com/Reshuyadav1418/Trackify_Agent/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold hover:text-indigo-600 transition-colors no-underline text-neu-primary cursor-pointer shadow-neu-raised-sm"
+              title="Download Windows Desktop Agent (.exe)"
+            >
+              <Monitor size={14} className="text-indigo-500" />
+              <span>Download Agent (.exe)</span>
+            </a>
+
             {/* Mobile App Button */}
             <button
               type="button"
