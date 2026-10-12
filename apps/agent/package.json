@@ -1,6 +1,8 @@
 {
   "name": "@teamlogger/agent",
   "version": "0.1.0",
+  "description": "Trackify Desktop Agent Time & Activity Tracker",
+  "author": "Trackify",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -18,13 +20,14 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.28",
-    "electron": "^29.1.4",
+    "electron": "29.4.6",
     "electron-builder": "^26.15.3",
     "typescript": "^5.4.2"
   },
   "build": {
     "appId": "com.trackify.agent",
     "productName": "Trackify Agent",
+    "electronVersion": "29.4.6",
     "files": [
       "dist/**/*",
       "index.html",
